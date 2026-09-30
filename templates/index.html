@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruthLens — AI Fake News Detection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-surface: rgba(18, 24, 38, 0.75);
+            --bg-card: rgba(28, 36, 56, 0.65);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(99, 102, 241, 0.35);
+            --accent-primary: #6366f1;
+            --accent-primary-hover: #4f46e5;
+            --accent-secondary: #06b6d4;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --real-color: #10b981;
+            --real-bg: rgba(16, 185, 129, 0.15);
+            --real-border: rgba(16, 185, 129, 0.35);
+            --fake-color: #ef4444;
+            --fake-bg: rgba(239, 68, 68, 0.15);
+            --fake-border: rgba(239, 68, 68, 0.35);
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.12) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(139, 92, 246, 0.08) 0px, transparent 60%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2.5rem 1.25rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 1rem;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid var(--border-glow);
+            border-radius: 9999px;
+            color: #a5b4fc;
+            font-size: 0.825rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1.25rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .badge-pill .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.85rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.75rem;
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, #818cf8 0%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            max-width: 580px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Main Card */
+        .glass-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(16px);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s ease;
+        }
+
+        .glass-card:focus-within {
+            border-color: var(--border-glow);
+        }
+
+        .form-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.75rem;
+        }
+
+        .form-label .helper {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-weight: 400;
+        }
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 1.25rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 140px;
+            background: rgba(11, 15, 25, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+            background: rgba(11, 15, 25, 0.85);
+        }
+
+        textarea::placeholder {
+            color: var(--text-dim);
+        }
+
+        /* Quick Examples */
+        .examples-row {
+            margin-bottom: 1.5rem;
+        }
+
+        .examples-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+        }
+
+        .example-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .chip-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.75rem;
+            font-size: 0.825rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .chip-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.4);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        /* Action Buttons */
+        .actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn-submit {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #4338ca 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 0.85rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+            font-family: inherit;
+        }
+
+        .btn-submit:hover {
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(99, 102, 241, 0.45);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-clear {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+            padding: 0.85rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-clear:hover {
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Results Box */
+        {% if prediction %}
+        .result-section {
+            margin-top: 2rem;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-card {
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            background: {% if is_real %}var(--real-bg){% else %}var(--fake-bg){% endif %};
+            border: 1px solid {% if is_real %}var(--real-border){% else %}var(--fake-border){% endif %};
+            backdrop-filter: blur(12px);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .verdict-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: {% if is_real %}var(--real-color){% else %}var(--fake-color){% endif %};
+        }
+
+        .verdict-badge .icon-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: {% if is_real %}rgba(16, 185, 129, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %};
+            font-size: 1.1rem;
+        }
+
+        .confidence-tag {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.25);
+            padding: 0.4rem 0.85rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Meter bar */
+        .meter-container {
+            margin-bottom: 1.25rem;
+        }
+
+        .meter-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.825rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .progress-track {
+            height: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 9999px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: {{ truth_prob_pct }}%;
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+            border-radius: 9999px;
+            transition: width 1s ease-in-out;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .stat-val.real { color: var(--real-color); }
+        .stat-val.fake { color: var(--fake-color); }
+
+        .stat-label {
+            font-size: 0.775rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        {% endif %}
+
+        /* Footer */
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        footer a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        footer a:hover {
+            color: #a5b4fc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="badge-pill">
+                <span class="pulse-dot"></span>
+                NLP &amp; Machine Learning Engine Ready
+            </div>
+            <h1>TruthLens <span>Detector</span></h1>
+            <p class="subtitle">
+                Paste any headline or statement below. Our TF-IDF N-gram model evaluates lexical credibility and calculates probability scores.
+            </p>
+        </header>
+
+        <main class="glass-card">
+            <form action="/predict" method="post" id="newsForm">
+                <div class="form-label">
+                    <span>News Statement or Headline</span>
+                    <span class="helper">Trained on LIAR Benchmark Dataset</span>
+                </div>
+                
+                <div class="input-wrapper">
+                    <textarea 
+                        name="news" 
+                        id="newsInput" 
+                        placeholder="e.g. The unemployment rate dropped to 3.5% according to the latest labor statistics..."
+                        required
+                    >{{ news_text if news_text else '' }}</textarea>
+                </div>
+
+                <div class="examples-row">
+                    <div class="examples-label">Try with test examples:</div>
+                    <div class="example-chips">
+                        <button type="button" class="chip-btn" onclick="setExample('The unemployment rate has declined significantly across major industries this year.')">
+                            📉 Unemployment rate decline
+                        </button>
+                        <button type="button" class="chip-btn" onclick="setExample('Scientists discover secret dinosaur colony living beneath the Antarctic ice sheet.')">
+                            🦖 Antarctic dinosaur colony
+                        </button>
+                        <button type="button" class="chip-btn" onclick="setExample('The Federal Reserve announced interest rate adjustments following quarterly economic review.')">
+                            🏛️ Fed interest rate update
+                        </button>
+                    </div>
+                </div>
+
+                <div class="actions-row">
+                    <button type="button" class="btn-clear" onclick="clearInput()">Clear</button>
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Analyze Credibility
+                    </button>
+                </div>
+            </form>
+
+            {% if prediction %}
+            <section class="result-section">
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="verdict-badge">
+                            <span class="icon-box">{% if is_real %}✅{% else %}⚠️{% endif %}</span>
+                            <span>{{ prediction }}</span>
+                        </div>
+                        <span class="confidence-tag">Model Confidence: {{ confidence }}%</span>
+                    </div>
+
+                    <div class="meter-container">
+                        <div class="meter-labels">
+                            <span>Fake Tendency (0%)</span>
+                            <span>Truth Probability: <strong>{{ truth_prob_pct }}%</strong></span>
+                            <span>Real Tendency (100%)</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-box">
+                            <div class="stat-val real">{{ truth_prob_pct }}%</div>
+                            <div class="stat-label">Truth Score</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-val fake">{{ fake_prob_pct }}%</div>
+                            <div class="stat-label">Fake Score</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+        </main>
+
+        <footer>
+            <p>Powered by Scikit-Learn TF-IDF N-Gram Pipeline &bull; Flask &bull; LIAR Benchmark</p>
+        </footer>
+    </div>
+
+    <script>
+        function setExample(text) {
+            const input = document.getElementById('newsInput');
+            input.value = text;
+            input.focus();
+        }
+
+        function clearInput() {
+            const input = document.getElementById('newsInput');
+            input.value = '';
+            input.focus();
+        }
+    </script>
+</body>
+</html>
