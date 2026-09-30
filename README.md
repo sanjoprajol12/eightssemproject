@@ -6,17 +6,19 @@ TruthLens is an enterprise-grade Fake News Detection and Fact-Checking Platform 
 
 ## 🚀 Key Features & Capabilities
 
-- **Hybrid Detection Pipeline**:
+- **Hybrid Detection & Free AI Reasoning Pipeline**:
   - **FTS5 Corpus Matching**: Sub-millisecond full-text search against verified real and fake news corpora.
   - **Ensemble Machine Learning**: Integrates multiple classifiers including Logistic Regression, Naive Bayes, Decision Trees, Linear SVM, SGD, and Random Forest.
+  - **Why It Is Real vs. Why It Is Fake (Deep Analysis)**: Generates dual-factor structured evidence grids highlighting journalistic attributions, factual entity density, clickbait triggers, and emotional manipulation patterns.
+  - **Free AI Reasoning Engine**: Built-in zero-shot neural reasoner with NLTK VADER sentiment analysis, objectivity scoring, and automatic fallback support for free cloud LLM inference (Groq/HuggingFace).
   - **Domain & URL Analysis**: SSRF-protected URL content scraper, domain reputation scoring, and SSL/TLD trust evaluation.
-  - **Explainable AI (XAI)**: Generates human-readable evidence summaries, matched text snippets, and model breakdown confidence scores.
+  - **Exportable Fact-Check Audit**: Print-ready, branded fact-check verification certificates.
 
 - **Unified Glassmorphism UI (Min-UI Design System)**:
   - Deep navy and indigo palette (`#080c14`, `#6366f1`, `#06b6d4`, `#10b981`, `#f43f5e`).
-  - **Public Detector (`/`)**: Asynchronous text & URL credibility verification with animated confidence gauges, model breakdowns, and matched evidence cards.
+  - **Public Detector (`/`)**: Asynchronous text & URL verification with animated confidence gauges, AI executive summary, dual Why Real / Why Fake cards, objectivity and emotional charge meters, and print-ready fact-check export.
   - **Admin Authentication (`/login/`, `/register/`)**: Secure session-based authentication with animated feedback.
-  - **Interactive Admin Dashboard (`/dashboard/`)**: Pure vanilla JS & CSS (no React or CDN overhead), overview metric cards, recent articles table, quick detector, complete Article CRUD management with image uploads, system telemetry panel, and in-place profile management.
+  - **Interactive Admin Dashboard (`/dashboard/`)**: Pure vanilla JS & CSS, overview metric cards, recent articles table, quick detector, complete Article CRUD with image uploads, system telemetry panel, in-place profile management, and a dedicated **Detection Logs & Audit Trail** browser with search and inspection modal.
 
 - **Enterprise Security**:
   - Constant-time password validation & Django `pbkdf2_sha256` password hashing.

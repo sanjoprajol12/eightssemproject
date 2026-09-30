@@ -60,7 +60,7 @@ class DetectionLog(models.Model):
     query_text = models.TextField()
     input_type = models.CharField(max_length=10, choices=INPUT_CHOICES, default='text')
     url = models.URLField(max_length=1000, blank=True, null=True)
-    result = models.CharField(max_length=50) # 'Real News', 'Fake News', 'Inconclusive'
+    result = models.CharField(max_length=50)  # 'Real News', 'Fake News', 'Inconclusive'
     confidence = models.FloatField(default=0.0)
     source_info = models.CharField(max_length=255, blank=True)
     evidence = models.JSONField(default=dict, blank=True)
@@ -68,6 +68,31 @@ class DetectionLog(models.Model):
     explanation = models.JSONField(default=list, blank=True)
     response_time_ms = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    # Human-in-the-loop review fields
+    needs_review = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Auto-flagged when confidence is in the borderline 40–65% range."
+    )
+    is_reviewed = models.BooleanField(
+        default=False,
+        help_text="Set to True once a human reviewer has validated this detection."
+    )
+    reviewer_verdict = models.CharField(
+        max_length=50, blank=True, default='',
+        help_text="Human reviewer override verdict."
+    )
+
+    # Bias analysis fields
+    bias_label = models.CharField(
+        max_length=100, blank=True, default='',
+        help_text="Detected bias type, e.g. 'Political Right', 'Emotional Alarmism'."
+    )
+    political_lean = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="Detected political lean: left, right, center, or neutral."
+    )
 
     class Meta:
         ordering = ['-created_at']

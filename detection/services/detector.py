@@ -270,6 +270,7 @@ class FakeNewsDetector:
             'why_fake': ai_analysis['why_fake'],
             'sentiment_analysis': ai_analysis['sentiment_analysis'],
             'factuality_metrics': ai_analysis['factuality_metrics'],
+            'bias_analysis': ai_analysis.get('bias_analysis', {}),
             'ai_summary': ai_analysis['ai_summary'],
             'ai_provider': ai_analysis['ai_provider'],
             'objectivity_pct': ai_analysis['objectivity_pct'],
@@ -295,6 +296,15 @@ class FakeNewsDetector:
             'article_title': extracted_title or target_text[:90]
         }
 
+        # Determine if this detection needs human review (borderline confidence)
+        needs_review = 40.0 <= verdict['confidence'] <= 65.0 or verdict['result'] == 'Inconclusive'
+
+        # Extract bias data for persistence
+        bias_info = ai_analysis.get('bias_analysis', {})
+        bias_label = '; '.join(bias_info.get('bias_types', []))[:100]
+        political_lean = bias_info.get('political_lean', 'neutral')
+
+
         # 9. Asynchronously/Safely Log Detection Request
         try:
             DetectionLog.objects.create(
@@ -307,9 +317,13 @@ class FakeNewsDetector:
                 evidence=report['evidence'],
                 model_predictions=report['models'],
                 explanation=report['explanation'],
-                response_time_ms=elapsed_ms
+                response_time_ms=elapsed_ms,
+                needs_review=needs_review,
+                bias_label=bias_label,
+                political_lean=political_lean,
             )
         except Exception as e:
             logger.warning(f"Failed to record DetectionLog: {e}")
+
 
         return report

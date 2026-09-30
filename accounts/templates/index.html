@@ -143,8 +143,92 @@
         footer { border-top:1px solid var(--border); padding:1.5rem 2rem; text-align:center; font-size:0.825rem; color:var(--dim); display:flex; align-items:center; justify-content:center; gap:1.5rem; flex-wrap:wrap; }
         footer a { color:var(--accent); text-decoration:none; }
         footer a:hover { color:#a5b4fc; }
-        .error-box { background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.3); border-radius:var(--r-sm); padding:0.85rem 1rem; font-size:0.875rem; color:#fda4af; margin-top:1rem; display:none; }
         .divider { border:none; border-top:1px solid var(--border); margin:1.5rem 0; }
+
+        /* ── AI Executive Analysis & Dual Reasons Grid ── */
+        .ai-summary-card { background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:var(--r-sm); padding:1rem 1.15rem; margin-bottom:1.1rem; }
+        .ai-summary-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem; }
+        .ai-badge { display:inline-flex; align-items:center; gap:0.35rem; font-size:0.75rem; font-weight:600; color:#a5b4fc; background:rgba(99,102,241,0.2); padding:0.2rem 0.6rem; border-radius:9999px; border:1px solid rgba(99,102,241,0.3); }
+        .ai-summary-text { font-size:0.875rem; line-height:1.6; color:var(--text); }
+        .reasons-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.85rem; margin-bottom:1.1rem; }
+        @media (max-width:620px) { .reasons-grid { grid-template-columns:1fr; } }
+        .reason-box { border-radius:var(--r-sm); padding:1rem; background:rgba(0,0,0,0.22); border:1px solid var(--border); display:flex; flex-direction:column; }
+        .reason-box.real { border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.04); }
+        .reason-box.fake { border-color:rgba(244,63,94,0.3); background:rgba(244,63,94,0.04); }
+        .reason-title { display:flex; align-items:center; gap:0.45rem; font-family:'Outfit',sans-serif; font-size:0.875rem; font-weight:700; margin-bottom:0.65rem; }
+        .reason-box.real .reason-title { color:var(--real); }
+        .reason-box.fake .reason-title { color:var(--fake); }
+        .reason-list { list-style:none; display:flex; flex-direction:column; gap:0.5rem; margin:0; padding:0; }
+        .reason-item { font-size:0.825rem; color:var(--muted); line-height:1.5; display:flex; align-items:flex-start; gap:0.45rem; }
+        .reason-item::before { content:'•'; font-weight:bold; }
+        .reason-box.real .reason-item::before { color:var(--real); }
+        .reason-box.fake .reason-item::before { color:var(--fake); }
+        .reason-empty { font-size:0.8rem; color:var(--dim); font-style:italic; }
+
+        /* Metrics strip */
+        .metrics-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:0.75rem; margin-bottom:1.1rem; }
+        @media (max-width:520px) { .metrics-strip { grid-template-columns:1fr; } }
+        .metric-tile { background:rgba(0,0,0,0.18); border:1px solid var(--border); border-radius:8px; padding:0.65rem 0.85rem; text-align:center; }
+        .metric-num { font-family:'Outfit',sans-serif; font-size:1.15rem; font-weight:700; color:var(--text); margin-bottom:0.15rem; }
+        .metric-desc { font-size:0.7rem; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+
+        /* ── SVG Radial Confidence Gauge ── */
+        .gauge-wrap { display:flex; flex-direction:column; align-items:center; margin-bottom:1.1rem; }
+        .gauge-svg { width:180px; height:100px; overflow:visible; }
+        .gauge-bg { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:14; stroke-linecap:round; }
+        .gauge-arc { fill:none; stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1), stroke 0.4s; }
+        .gauge-label { font-family:'Outfit',sans-serif; font-size:1.4rem; font-weight:800; fill:var(--text); text-anchor:middle; }
+        .gauge-sub { font-size:0.68rem; fill:var(--muted); text-anchor:middle; font-family:'Inter',sans-serif; }
+        .gauge-row { display:flex; justify-content:space-between; width:180px; margin-top:-4px; }
+        .gauge-end-lbl { font-size:0.7rem; color:var(--dim); font-weight:600; }
+
+        /* ── Bias Analysis Panel ── */
+        .bias-card { background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:var(--r-sm); padding:0.9rem 1.1rem; margin-bottom:1.1rem; }
+        .bias-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem; flex-wrap:wrap; gap:0.5rem; }
+        .bias-title { font-family:'Outfit',sans-serif; font-size:0.875rem; font-weight:700; color:#fbbf24; }
+        .bias-lean { font-size:0.75rem; font-weight:700; padding:0.2rem 0.65rem; border-radius:9999px; text-transform:uppercase; letter-spacing:0.05em; }
+        .bias-lean.left { background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); }
+        .bias-lean.right { background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+        .bias-lean.center { background:rgba(167,139,250,0.2); color:#a78bfa; border:1px solid rgba(167,139,250,0.3); }
+        .bias-lean.neutral { background:rgba(148,163,184,0.1); color:var(--muted); border:1px solid var(--border); }
+        .bias-score-bar { height:6px; background:rgba(0,0,0,0.3); border-radius:9999px; overflow:hidden; margin-bottom:0.6rem; }
+        .bias-score-fill { height:100%; background:linear-gradient(90deg,#10b981,#f59e0b,#f43f5e); border-radius:9999px; transition:width 1s ease; }
+        .bias-types { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.5rem; }
+        .bias-tag { font-size:0.75rem; color:#fcd34d; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.2); border-radius:6px; padding:0.2rem 0.5rem; }
+        .bias-summary-text { font-size:0.8rem; color:var(--muted); line-height:1.5; }
+
+        /* ── Word Credibility Heatmap ── */
+        .heatmap-card { background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:var(--r-sm); padding:0.9rem 1.1rem; margin-bottom:1.1rem; }
+        .heatmap-title { font-family:'Outfit',sans-serif; font-size:0.8rem; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.65rem; }
+        .heatmap-legend { display:flex; gap:1rem; margin-bottom:0.65rem; flex-wrap:wrap; }
+        .legend-item { display:flex; align-items:center; gap:0.3rem; font-size:0.72rem; color:var(--muted); }
+        .legend-dot { width:10px; height:10px; border-radius:3px; }
+        .heatmap-text { font-size:0.875rem; line-height:1.8; color:var(--muted); word-spacing:3px; }
+        .hw-real { background:rgba(16,185,129,0.25); border-radius:3px; padding:0 2px; color:#34d399; }
+        .hw-fake { background:rgba(244,63,94,0.25); border-radius:3px; padding:0 2px; color:#fb7185; }
+        .hw-warn { background:rgba(245,158,11,0.2); border-radius:3px; padding:0 2px; color:#fbbf24; }
+
+        /* ── Review Needed Banner ── */
+        .review-banner { display:flex; align-items:center; gap:0.75rem; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:var(--r-sm); padding:0.75rem 1rem; margin-bottom:1.1rem; font-size:0.85rem; color:#fbbf24; }
+        .review-banner-icon { font-size:1.1rem; }
+        .review-banner-text { flex:1; line-height:1.4; }
+        .review-banner-text strong { color:#fde68a; }
+
+        /* ── Share / Action Buttons ── */
+        .result-actions { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.1rem; }
+        .btn-action { display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:600; padding:0.45rem 0.85rem; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--muted); cursor:pointer; transition:all 0.18s; font-family:inherit; }
+        .btn-action:hover { background:rgba(255,255,255,0.08); color:var(--text); border-color:rgba(255,255,255,0.18); }
+        .btn-action.copied { background:rgba(16,185,129,0.15); color:var(--real); border-color:rgba(16,185,129,0.3); }
+
+        /* Print styles */
+        @media print {
+            body { background:#fff !important; color:#000 !important; }
+            nav, .hero, .tabs, .actions, .features, footer, .chip-wrap, #panel-url, .btn-print-hide { display:none !important; }
+            .detector-wrap { max-width:100% !important; margin:0 !important; padding:0 !important; }
+            .glass-card { background:#fff !important; border:1px solid #ccc !important; box-shadow:none !important; color:#000 !important; }
+            .stat-card, .metric-tile, .reason-box, .ai-summary-card, .bias-card, .heatmap-card { background:#f9fafb !important; color:#000 !important; border-color:#e5e7eb !important; }
+            .stat-val, .metric-num, .verdict-label, .ai-summary-text, .reason-item { color:#000 !important; }
+        }
     </style>
 </head>
 <body>
@@ -211,6 +295,37 @@
         <div id="result-section">
             <hr class="divider">
 
+            <div style="display:flex;justify-content:flex-end;margin-bottom:0.85rem" class="btn-print-hide">
+                <button class="chip" onclick="window.print()">&#128438;&#65039; Export / Print Fact-Check Report</button>
+            </div>
+
+            <!-- Review Needed Banner (shown for borderline/inconclusive) -->
+            <div class="review-banner" id="reviewBanner" style="display:none">
+                <span class="review-banner-icon">&#128064;</span>
+                <div class="review-banner-text">
+                    <strong>Human Review Recommended</strong> — Confidence is in the borderline range. This detection has been flagged for expert verification in the admin review queue.
+                </div>
+            </div>
+
+            <!-- Result Action Buttons -->
+            <div class="result-actions btn-print-hide">
+                <button class="btn-action" id="shareLinkBtn" onclick="shareResult()">&#128279; Copy Result Link</button>
+                <button class="btn-action" onclick="window.print()">&#128438; Print / PDF</button>
+                <button class="btn-action" id="copyJsonBtn" onclick="copyJson()">&#128203; Copy JSON</button>
+            </div>
+
+            <!-- SVG Radial Confidence Gauge -->
+            <div class="gauge-wrap">
+                <svg class="gauge-svg" viewBox="0 0 200 110">
+                    <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" />
+                    <path class="gauge-arc" id="gaugeArc" d="M 20 100 A 80 80 0 0 1 180 100"
+                        stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke="#6366f1" />
+                    <text class="gauge-label" x="100" y="92" id="gaugeLabel">—</text>
+                    <text class="gauge-sub" x="100" y="107">CREDIBILITY SCORE</text>
+                </svg>
+                <div class="gauge-row"><span class="gauge-end-lbl">FAKE</span><span class="gauge-end-lbl">REAL</span></div>
+            </div>
+
             <div class="verdict-banner" id="verdictBanner">
                 <div class="verdict-left">
                     <div class="v-icon" id="verdictIcon"></div>
@@ -222,6 +337,16 @@
                 <div class="conf-pill" id="confPill"></div>
             </div>
 
+            <!-- AI Executive Analysis -->
+            <div class="ai-summary-card" id="aiSummarySection">
+                <div class="ai-summary-header">
+                    <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.9rem;color:var(--text)">&#129302; AI Executive Verdict Analysis</span>
+                    <span class="ai-badge" id="aiProviderBadge">TruthLens Neural Reasoner</span>
+                </div>
+                <p class="ai-summary-text" id="aiSummaryText"></p>
+            </div>
+
+            <!-- Meter -->
             <div class="meter-wrap">
                 <div class="meter-row">
                     <span>Fake</span>
@@ -248,6 +373,34 @@
                 </div>
             </div>
 
+            <!-- Metrics Strip -->
+            <div class="metrics-strip">
+                <div class="metric-tile">
+                    <div class="metric-num" id="metricObj" style="color:#a5b4fc">—</div>
+                    <div class="metric-desc">Objectivity Index</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-num" id="metricCharge" style="color:var(--warn)">—</div>
+                    <div class="metric-desc">Emotional Charge</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-num" id="metricRigor" style="color:var(--real)">—</div>
+                    <div class="metric-desc">Journalistic Rigor</div>
+                </div>
+            </div>
+
+            <!-- Dual Why Real vs Why Fake Grid -->
+            <div class="reasons-grid">
+                <div class="reason-box real">
+                    <div class="reason-title">&#128737;&#65039; Why It Leans REAL</div>
+                    <ul class="reason-list" id="whyRealList"></ul>
+                </div>
+                <div class="reason-box fake">
+                    <div class="reason-title">&#9888;&#65039; Why It Leans FAKE / Risks</div>
+                    <ul class="reason-list" id="whyFakeList"></ul>
+                </div>
+            </div>
+
             <div id="modelsSection" style="display:none">
                 <div class="section-header">Model Breakdown</div>
                 <div class="model-list" id="modelList"></div>
@@ -259,7 +412,7 @@
             </div>
 
             <div id="xaiSection" style="display:none">
-                <div class="section-header">Why this verdict?</div>
+                <div class="section-header">Linguistic & Sourcing Signals</div>
                 <ul class="xai-list" id="xaiList"></ul>
             </div>
         </div>
@@ -294,6 +447,7 @@
 
 <script>
 let activeTab = 'text';
+let _lastResult = null;
 
 function switchTab(tab) {
     activeTab = tab;
@@ -326,6 +480,93 @@ function showError(msg) {
     box.style.display = 'block';
 }
 
+// ── SVG Gauge Animator ──────────────────────────────────────────────────────
+function animateGauge(score, isReal, isInconclusive) {
+    const arc = document.getElementById('gaugeArc');
+    const label = document.getElementById('gaugeLabel');
+    const totalLen = 251.2;
+    const offset = totalLen - (score / 100) * totalLen;
+    const color = isReal ? '#10b981' : isInconclusive ? '#f59e0b' : '#f43f5e';
+    setTimeout(() => {
+        arc.style.strokeDashoffset = offset;
+        arc.style.stroke = color;
+        label.textContent = score.toFixed(0) + '%';
+        label.style.fill = color;
+    }, 60);
+}
+
+// ── Word Heatmap Builder ─────────────────────────────────────────────────────
+const REAL_WORDS = new Set(['study','research','university','confirmed','official','report','according','spokesperson','announced','data','analysis','published','journal','committee','government','authority','minister','statement','survey','percent','figures','evidence','statistics']);
+const FAKE_WORDS = new Set(['shocking','exposed','bombshell','secret','banned','coverup','truth','mainstream','agenda','globalist','radical','hoax','fake','scam','plandemic','crisis','urgent','must','share','deleted','wake','puppets','corrupt','illegal','destroy']);
+const WARN_WORDS = new Set(['unbelievable','incredible','devastating','catastrophic','outrage','explosive','terrifying','breaking','exclusive','never','always','everyone','nobody','100%','guaranteed','immediate','final','warning','alert','danger']);
+
+function buildHeatmap(text) {
+    if (!text) return '';
+    const words = text.replace(/\n/g, ' ').split(/\s+/).slice(0, 120);
+    return words.map(word => {
+        const clean = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (REAL_WORDS.has(clean)) return `<span class="hw-real" title="Credibility signal">${word}</span>`;
+        if (FAKE_WORDS.has(clean)) return `<span class="hw-fake" title="Risk / fake signal">${word}</span>`;
+        if (WARN_WORDS.has(clean)) return `<span class="hw-warn" title="Sensational language">${word}</span>`;
+        return word;
+    }).join(' ') + (words.length >= 120 ? ' <span style="color:var(--dim);font-size:0.75rem">... (truncated)</span>' : '');
+}
+
+// ── Bias Panel Renderer ──────────────────────────────────────────────────────
+function renderBias(biasData) {
+    if (!biasData) return;
+    const lean = (biasData.political_lean || 'neutral').toLowerCase();
+    const badge = document.getElementById('biasLeanBadge');
+    badge.textContent = lean.charAt(0).toUpperCase() + lean.slice(1);
+    badge.className = 'bias-lean ' + lean;
+
+    const fill = document.getElementById('biasScoreFill');
+    setTimeout(() => { fill.style.width = (biasData.bias_score || 0) + '%'; }, 80);
+
+    const typesList = document.getElementById('biasTypesList');
+    typesList.innerHTML = '';
+    (biasData.bias_types || []).forEach(t => {
+        const tag = document.createElement('span');
+        tag.className = 'bias-tag';
+        tag.textContent = t;
+        typesList.appendChild(tag);
+    });
+    if (!biasData.bias_types || biasData.bias_types.length === 0) {
+        const tag = document.createElement('span');
+        tag.className = 'bias-tag';
+        tag.style.cssText = 'color:var(--real);background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.2)';
+        tag.textContent = 'No bias detected';
+        typesList.appendChild(tag);
+    }
+    document.getElementById('biasSummaryText').textContent = biasData.bias_summary || '';
+}
+
+// ── Share & Copy ─────────────────────────────────────────────────────────────
+function shareResult() {
+    if (!_lastResult) return;
+    const r = _lastResult;
+    const text = `TruthLens Verdict: ${r.result} (${parseFloat(r.confidence).toFixed(1)}% confidence)\n${r.ai_summary || ''}`;
+    const btn = document.getElementById('shareLinkBtn');
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = '✓ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = '🔗 Copy Result Link'; btn.classList.remove('copied'); }, 2200);
+        });
+    }
+}
+
+function copyJson() {
+    if (!_lastResult) return;
+    const btn = document.getElementById('copyJsonBtn');
+    navigator.clipboard && navigator.clipboard.writeText(JSON.stringify(_lastResult, null, 2)).then(() => {
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 Copy JSON'; btn.classList.remove('copied'); }, 2200);
+    });
+}
+
+// ── Main Analysis ─────────────────────────────────────────────────────────────
 async function runAnalysis() {
     const btn = document.getElementById('analyzeBtn');
     clearResult();
@@ -362,6 +603,7 @@ async function runAnalysis() {
 }
 
 function renderResult(data) {
+    _lastResult = data;
     const result = data.result || data.credibility_report?.result || 'Inconclusive';
     const confidence = parseFloat(data.confidence || data.credibility_report?.confidence || 50);
     const source = data.source || data.credibility_report?.source || '';
@@ -379,21 +621,74 @@ function renderResult(data) {
     const truthScore = isReal ? confidence : (100 - confidence);
     const fakeScore = 100 - truthScore;
 
+    // Animate gauge
+    animateGauge(truthScore, isReal, isInconclusive);
+
     setTimeout(() => { document.getElementById('meterFill').style.width = truthScore.toFixed(1) + '%'; }, 50);
     document.getElementById('truthPct').textContent = truthScore.toFixed(1) + '%';
     document.getElementById('statTruth').textContent = truthScore.toFixed(1) + '%';
     document.getElementById('statFake').textContent = fakeScore.toFixed(1) + '%';
 
     const evidence = data.evidence || data.credibility_report?.evidence || {};
-    const matchCount = evidence.match_count || (evidence.matches || []).length || 0;
+    const matchCount = evidence.match_count || (evidence.matches || []).length || (evidence.indexed_corpus_match ? 1 : 0);
     document.getElementById('statEvidence').textContent = matchCount;
+
+    // Review needed banner
+    const needsReview = isInconclusive || (confidence >= 40 && confidence <= 65);
+    document.getElementById('reviewBanner').style.display = needsReview ? 'flex' : 'none';
+
+    // AI Reasoning & Summary
+    const aiSummary = data.ai_summary || data.credibility_report?.ai_summary || 'Analysis complete.';
+    const aiProvider = data.ai_provider || data.credibility_report?.ai_provider || 'TruthLens Neural Reasoner';
+    document.getElementById('aiSummaryText').textContent = aiSummary;
+    document.getElementById('aiProviderBadge').textContent = aiProvider;
+
+    // Metrics (Objectivity, Tone, Rigor)
+    const objectivity = data.objectivity_pct ?? data.credibility_report?.objectivity_pct ?? Math.round(truthScore);
+    const sentiment = data.sentiment_analysis || data.credibility_report?.sentiment_analysis || {};
+    const charge = sentiment.emotional_charge || 'Low';
+    const rigor = data.journalistic_rigor || data.credibility_report?.journalistic_rigor || 'Moderate';
+
+    document.getElementById('metricObj').textContent = objectivity + '%';
+    document.getElementById('metricCharge').textContent = charge;
+    document.getElementById('metricRigor').textContent = rigor;
+
+    // Why Real List
+    const whyReal = data.why_real || data.credibility_report?.why_real || [];
+    const whyRealEl = document.getElementById('whyRealList');
+    whyRealEl.innerHTML = '';
+    if (whyReal.length > 0) {
+        whyReal.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'reason-item';
+            li.textContent = item;
+            whyRealEl.appendChild(li);
+        });
+    } else {
+        whyRealEl.innerHTML = '<li class="reason-empty">No distinctive authentic corroboration factors detected.</li>';
+    }
+
+    // Why Fake List
+    const whyFake = data.why_fake || data.credibility_report?.why_fake || [];
+    const whyFakeEl = document.getElementById('whyFakeList');
+    whyFakeEl.innerHTML = '';
+    if (whyFake.length > 0) {
+        whyFake.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'reason-item';
+            li.textContent = item;
+            whyFakeEl.appendChild(li);
+        });
+    } else {
+        whyFakeEl.innerHTML = '<li class="reason-empty">No deceptive syntax or clickbait patterns detected.</li>';
+    }
 
     // Models
     const models = data.models?.predictions || data.predictions || {};
     const modelSection = document.getElementById('modelsSection');
     const modelList = document.getElementById('modelList');
     modelList.innerHTML = '';
-    const modelNames = { logistic_regression:'Logistic Regression', naive_bayes:'Naive Bayes', random_forest:'Random Forest', sgd_incremental:'SGD Incremental' };
+    const modelNames = { logistic_regression:'Logistic Regression', naive_bayes:'Naive Bayes', random_forest:'Random Forest', sgd_incremental:'SGD Incremental', linear_svm:'Linear SVM', flask_pipeline:'Flask Pipeline' };
     let hasModels = false;
     for (const [k, v] of Object.entries(models)) {
         if (v === null || v === undefined) continue;
@@ -421,6 +716,20 @@ function renderResult(data) {
         });
         evidSection.style.display = 'block';
     } else { evidSection.style.display = 'none'; }
+
+    // Bias Analysis Panel
+    const biasData = data.bias_analysis || data.credibility_report?.bias_analysis || null;
+    renderBias(biasData);
+
+    // Word Credibility Heatmap
+    const inputText = data.query_text || document.getElementById('newsInput').value || '';
+    const heatmapEl = document.getElementById('heatmapText');
+    if (inputText.trim()) {
+        heatmapEl.innerHTML = buildHeatmap(inputText);
+        document.getElementById('heatmapCard').style.display = 'block';
+    } else {
+        document.getElementById('heatmapCard').style.display = 'none';
+    }
 
     // XAI
     const explanations = data.explanation || data.credibility_report?.explanation || [];

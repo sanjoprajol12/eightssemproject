@@ -6,6 +6,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from detection.services.detector import FakeNewsDetector
+from detection.services.domain_analyzer import fetch_article_from_url, analyze_domain_credibility
 from detection.models import IndexedNews, DetectionLog
 from accounts.models import Article
 
@@ -241,4 +242,117 @@ def detection_history_api(request):
         })
     except Exception as e:
         logger.error(f"Error retrieving detection history: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def source_check_api(request):
+    """
+    POST /api/source/check/
+    Check the credibility and reputation of a news domain.
+    Accepts JSON: {"url": "https://..."}  OR  {"domain": "example.com"}
+    """
+    try:
+        if request.content_type == 'application/json':
+            body = json.loads(request.body)
+        else:
+            body = request.POST
+
+        url = body.get('url', '').strip()
+        domain = body.get('domain', '').strip()
+
+        if not url and not domain:
+            return JsonResponse({'success': False, 'error': 'Provide a URL or domain name.'}, status=400)
+
+        if url:
+            result = fetch_article_from_url(url)
+            domain = result.get('domain', domain)
+            is_https = result.get('is_https', True)
+        else:
+            is_https = True  # Assume HTTPS when only domain is given
+
+        analysis = analyze_domain_credibility(domain, is_https=is_https)
+
+        # Enrich with detection stats from our logs
+        url_count = DetectionLog.objects.filter(url__icontains=domain).count()
+        fake_count = DetectionLog.objects.filter(url__icontains=domain, result__icontains='Fake').count()
+        real_count = DetectionLog.objects.filter(url__icontains=domain, result__icontains='Real').count()
+
+        analysis.update({
+            'success': True,
+            'domain_checked': domain,
+            'detection_stats': {
+                'total_checked': url_count,
+                'real_count': real_count,
+                'fake_count': fake_count,
+                'fake_rate_pct': round((fake_count / url_count * 100), 1) if url_count else 0.0,
+            }
+        })
+        return JsonResponse(analysis)
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON payload.'}, status=400)
+    except Exception as e:
+        logger.error(f"Error in source_check_api: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': 'Unable to analyze source.'}, status=500)
+
+
+@require_http_methods(["GET"])
+def needs_review_api(request):
+    """
+    GET /api/detections/needs-review/
+    Returns the queue of borderline detections awaiting human review.
+    """
+    try:
+        qs = DetectionLog.objects.filter(needs_review=True, is_reviewed=False).order_by('-created_at')[:50]
+        items = []
+        for log in qs:
+            items.append({
+                'id': log.id,
+                'query_text': log.query_text[:200],
+                'result': log.result,
+                'confidence': log.confidence,
+                'bias_label': log.bias_label,
+                'political_lean': log.political_lean,
+                'created_at': log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            })
+        return JsonResponse({'success': True, 'count': len(items), 'queue': items})
+    except Exception as e:
+        logger.error(f"Error retrieving review queue: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def review_detection_api(request, detection_id):
+    """
+    POST /api/detections/<id>/review/
+    Human reviewer submits an override verdict for a borderline detection.
+    Accepts JSON: {"verdict": "Real News"} or {"verdict": "Fake News"}
+    """
+    try:
+        log = DetectionLog.objects.get(pk=detection_id)
+    except DetectionLog.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Detection not found.'}, status=404)
+
+    try:
+        body = json.loads(request.body)
+        reviewer_verdict = body.get('verdict', '').strip()
+        if reviewer_verdict not in ('Real News', 'Fake News', 'Inconclusive'):
+            return JsonResponse({'success': False, 'error': 'Invalid verdict. Use: Real News, Fake News, or Inconclusive.'}, status=400)
+
+        log.reviewer_verdict = reviewer_verdict
+        log.is_reviewed = True
+        log.save(update_fields=['reviewer_verdict', 'is_reviewed'])
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Detection #{detection_id} marked as reviewed.',
+            'reviewer_verdict': reviewer_verdict
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON.'}, status=400)
+    except Exception as e:
+        logger.error(f"Error in review_detection_api: {e}", exc_info=True)
         return JsonResponse({'success': False, 'error': str(e)}, status=500)

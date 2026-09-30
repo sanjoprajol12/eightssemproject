@@ -319,6 +319,9 @@ window.D = {
         </button>
 
         <div class="sidebar-section">Admin</div>
+        <button class="nav-item" id="nav-history" onclick="goTo('history')">
+            <span class="icon">&#128337;</span> Detection Logs
+        </button>
         <button class="nav-item" id="nav-system" onclick="goTo('system')">
             <span class="icon">&#9881;&#65039;</span> System Stats
         </button>
@@ -543,6 +546,48 @@ window.D = {
             </div>
         </div>
 
+        <!-- ── Detection Logs Panel ── -->
+        <div class="panel" id="panel-history">
+            <div class="page-header">
+                <div class="page-title">&#128337; Detection Logs & Audit Trail</div>
+                <div class="page-subtitle">Real-time audit records of user and automated detection queries</div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header">
+                    <span class="card-title">Audit Records</span>
+                    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+                        <select id="historyVerdictFilter" onchange="loadDetectionHistory(1)" style="width:auto;padding:0.4rem 0.75rem;font-size:0.8rem">
+                            <option value="">All Verdicts</option>
+                            <option value="Real News">Real News Only</option>
+                            <option value="Fake News">Fake News Only</option>
+                            <option value="Inconclusive">Inconclusive Only</option>
+                        </select>
+                        <input type="text" id="historySearchInput" placeholder="Search statements..." onkeyup="if(event.key==='Enter')loadDetectionHistory(1)" style="width:180px;padding:0.4rem 0.75rem;font-size:0.8rem">
+                        <button class="btn-sm" onclick="loadDetectionHistory(1)">&#8635; Refresh</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Statement / Headline</th>
+                                <th>Verdict</th>
+                                <th>Confidence</th>
+                                <th>Latency</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTbody">
+                            <tr><td colspan="6"><div class="empty-state"><p>Loading detection logs...</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="historyPagination" style="display:none"></div>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -665,6 +710,43 @@ window.D = {
     </div>
 </div>
 
+<!-- ── Detection Audit Inspect Modal ── -->
+<div class="modal-overlay" id="logInspectModal">
+    <div class="modal" style="max-width:620px">
+        <div class="modal-header">
+            <span class="modal-title">&#128269; Detection Audit Record</span>
+            <button class="modal-close" onclick="closeLogModal()">&#215;</button>
+        </div>
+        <div class="modal-body" style="max-height:75vh;overflow-y:auto">
+            <div style="margin-bottom:1rem">
+                <label style="font-size:0.75rem;color:var(--dim);text-transform:uppercase">Analyzed Statement</label>
+                <div id="logInspectText" style="padding:0.75rem;background:rgba(0,0,0,0.3);border-radius:var(--r-sm);font-size:0.9rem;line-height:1.5;margin-top:0.25rem"></div>
+            </div>
+            <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap">
+                <div style="flex:1;background:rgba(0,0,0,0.2);padding:0.75rem;border-radius:8px">
+                    <span style="font-size:0.75rem;color:var(--dim)">Verdict</span>
+                    <div id="logInspectVerdict" style="font-size:1.1rem;font-weight:700;margin-top:0.2rem"></div>
+                </div>
+                <div style="flex:1;background:rgba(0,0,0,0.2);padding:0.75rem;border-radius:8px">
+                    <span style="font-size:0.75rem;color:var(--dim)">Confidence</span>
+                    <div id="logInspectConf" style="font-size:1.1rem;font-weight:700;color:var(--accent);margin-top:0.2rem"></div>
+                </div>
+                <div style="flex:1;background:rgba(0,0,0,0.2);padding:0.75rem;border-radius:8px">
+                    <span style="font-size:0.75rem;color:var(--dim)">Meta & Latency</span>
+                    <div id="logInspectMeta" style="font-size:0.85rem;color:var(--muted);margin-top:0.2rem"></div>
+                </div>
+            </div>
+            <div>
+                <label style="font-size:0.75rem;color:var(--dim);text-transform:uppercase">Linguistic & Sourcing Signals</label>
+                <ul id="logInspectExplanations" style="list-style:none;padding:0;margin-top:0.5rem;display:flex;flex-direction:column;gap:0.35rem"></ul>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-ghost" onclick="closeLogModal()">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ── State ──
 let allArticles = [];
@@ -703,6 +785,7 @@ function goTo(page) {
     if (navEl) navEl.classList.add('active');
 
     if (page === 'system') loadSystemStats();
+    if (page === 'history') loadDetectionHistory(1);
 }
 
 function handleGlobalSearch(val) {
@@ -788,6 +871,10 @@ function showDetectResult(elId, data) {
     const cls = isReal ? 'real' : isInconclusive ? 'uncertain' : 'fake';
     const icon = isReal ? '&#9989;' : isInconclusive ? '&#129300;' : '&#9888;&#65039;';
 
+    const aiSummary = data.ai_summary || data.credibility_report?.ai_summary || '';
+    const whyReal = data.why_real || data.credibility_report?.why_real || [];
+    const whyFake = data.why_fake || data.credibility_report?.why_fake || [];
+
     const models = data.models?.predictions || data.predictions || {};
     let modelTags = '';
     const labelMap = { logistic_regression:'LR', naive_bayes:'NB', random_forest:'RF', sgd_incremental:'SGD' };
@@ -798,12 +885,30 @@ function showDetectResult(elId, data) {
         modelTags += `<span class="model-tag ${tc}">${labelMap[k]||k}: ${lbl}</span>`;
     }
 
+    let reasonsHtml = '';
+    if (whyReal.length > 0 || whyFake.length > 0) {
+        reasonsHtml = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.75rem;font-size:0.8rem">
+                <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);border-radius:6px;padding:0.6rem">
+                    <strong style="color:var(--real);display:block;margin-bottom:0.3rem">&#128737;&#65039; Why It Leans REAL</strong>
+                    ${whyReal.slice(0, 2).map(r => `<div style="margin-bottom:0.25rem;color:var(--muted)">• ${escHtml(r)}</div>`).join('') || '<div style="color:var(--dim)">None identified</div>'}
+                </div>
+                <div style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.25);border-radius:6px;padding:0.6rem">
+                    <strong style="color:var(--fake);display:block;margin-bottom:0.3rem">&#9888;&#65039; Why It Leans FAKE</strong>
+                    ${whyFake.slice(0, 2).map(r => `<div style="margin-bottom:0.25rem;color:var(--muted)">• ${escHtml(r)}</div>`).join('') || '<div style="color:var(--dim)">None identified</div>'}
+                </div>
+            </div>
+        `;
+    }
+
     el.className = 'detect-result ' + cls;
     el.innerHTML = `
         <div class="result-verdict ${cls}">${icon} ${result}</div>
         <div class="result-detail">
             Confidence: <strong>${confidence}%</strong>${source ? ' &bull; Source: ' + source : ''}
         </div>
+        ${aiSummary ? `<div style="margin-top:0.6rem;padding:0.6rem 0.8rem;background:rgba(99,102,241,0.08);border-radius:6px;font-size:0.825rem;line-height:1.5;color:var(--text);border-left:2px solid var(--accent)"><strong>&#129302; AI Analysis:</strong> ${escHtml(aiSummary)}</div>` : ''}
+        ${reasonsHtml}
         ${modelTags ? '<div class="result-models">' + modelTags + '</div>' : ''}
     `;
     el.style.display = 'block';
@@ -1132,8 +1237,103 @@ async function loadSystemStats() {
     } catch(e) {
         errEl.textContent = 'Failed to load stats: ' + e.message;
         errEl.style.display = 'block';
-        grid.innerHTML = '';
+// ── Detection Logs & History ──
+let currentHistoryPage = 1;
+let allHistoryLogs = [];
+
+async function loadDetectionHistory(page = 1) {
+    currentHistoryPage = page;
+    const tbody = document.getElementById('historyTbody');
+    const filterEl = document.getElementById('historyVerdictFilter');
+    const searchEl = document.getElementById('historySearchInput');
+    const filter = filterEl ? filterEl.value : '';
+    const search = searchEl ? searchEl.value.trim() : '';
+
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>Loading detection logs...</p></div></td></tr>';
+
+    try {
+        let url = '/api/detections/history/?page=' + page + '&page_size=12';
+        if (filter) url += '&verdict=' + encodeURIComponent(filter);
+        if (search) url += '&search=' + encodeURIComponent(search);
+
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        allHistoryLogs = data.detections || [];
+        if (allHistoryLogs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>No detection logs found matching criteria.</p></div></td></tr>';
+            document.getElementById('historyPagination').style.display = 'none';
+            return;
+        }
+
+        tbody.innerHTML = allHistoryLogs.map(log => {
+            const isReal = /real/i.test(log.result);
+            const isUncertain = /inconclusive|uncertain/i.test(log.result);
+            const badgeBg = isReal ? 'background:rgba(16,185,129,0.15);color:var(--real);border:1px solid rgba(16,185,129,0.3)' : isUncertain ? 'background:rgba(245,158,11,0.15);color:var(--warn);border:1px solid rgba(245,158,11,0.3)' : 'background:rgba(244,63,94,0.15);color:var(--fake);border:1px solid rgba(244,63,94,0.3)';
+
+            return `
+                <tr>
+                    <td style="white-space:nowrap;font-size:0.8rem;color:var(--dim)">${log.created_at}</td>
+                    <td><div class="title-cell" title="${escHtml(log.query_text)}">${escHtml(log.query_text)}</div></td>
+                    <td><span style="display:inline-block;padding:0.2rem 0.6rem;border-radius:9999px;font-size:0.75rem;font-weight:600;${badgeBg}">${escHtml(log.result)}</span></td>
+                    <td><strong>${log.confidence.toFixed(1)}%</strong></td>
+                    <td style="color:var(--dim);font-size:0.8rem">${log.response_time_ms ? log.response_time_ms.toFixed(0) + 'ms' : '—'}</td>
+                    <td><button class="btn-sm" onclick="openLogModal(${log.id})">Inspect</button></td>
+                </tr>
+            `;
+        }).join('');
+
+        // Pagination
+        const pagWrap = document.getElementById('historyPagination');
+        if (data.total_pages <= 1) {
+            pagWrap.style.display = 'none';
+        } else {
+            pagWrap.style.display = 'flex';
+            let btns = '';
+            for (let i = 1; i <= data.total_pages; i++) {
+                btns += `<button class="page-btn${i === currentHistoryPage ? ' active' : ''}" onclick="loadDetectionHistory(${i})">${i}</button>`;
+            }
+            pagWrap.innerHTML = btns + `<span class="page-info">${data.total} total</span>`;
+        }
+    } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p style="color:var(--fake)">Failed to load logs: ${escHtml(e.message)}</p></div></td></tr>`;
     }
+}
+
+function openLogModal(id) {
+    const log = allHistoryLogs.find(l => l.id === id);
+    if (!log) return;
+
+    document.getElementById('logInspectText').textContent = log.query_text;
+    const isReal = /real/i.test(log.result);
+    const isUncertain = /inconclusive|uncertain/i.test(log.result);
+    const verdEl = document.getElementById('logInspectVerdict');
+    verdEl.textContent = log.result;
+    verdEl.style.color = isReal ? 'var(--real)' : isUncertain ? 'var(--warn)' : 'var(--fake)';
+
+    document.getElementById('logInspectConf').textContent = log.confidence.toFixed(1) + '%';
+    document.getElementById('logInspectMeta').textContent = `${log.created_at} (${log.response_time_ms || 0} ms) via ${log.input_type.toUpperCase()}`;
+
+    const expList = document.getElementById('logInspectExplanations');
+    expList.innerHTML = '';
+    const exps = log.explanation || [];
+    if (exps.length > 0) {
+        exps.forEach(e => {
+            const li = document.createElement('li');
+            li.style.cssText = 'padding:0.4rem 0.6rem;background:rgba(99,102,241,0.1);border-left:2px solid var(--accent);border-radius:0 4px 4px 0;font-size:0.825rem;color:var(--text)';
+            li.textContent = typeof e === 'string' ? e : JSON.stringify(e);
+            expList.appendChild(li);
+        });
+    } else {
+        expList.innerHTML = '<li style="font-size:0.8rem;color:var(--dim)">No supplementary explanations recorded.</li>';
+    }
+
+    document.getElementById('logInspectModal').classList.add('open');
+}
+
+function closeLogModal() {
+    document.getElementById('logInspectModal').classList.remove('open');
 }
 
 // ── Helpers ──

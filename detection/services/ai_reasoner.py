@@ -15,6 +15,38 @@ except Exception as e:
     logger.info(f"NLTK VADER analyzer fallback initialized: {e}")
 
 
+# ─── Bias Lexicons ───────────────────────────────────────────────────────────
+_BIAS_LEFT = [
+    'progressive', 'socialist', 'diversity', 'equity', 'inclusion', 'systemic racism',
+    'white privilege', 'marginalized', 'oppressed', 'defund the police', 'gender identity',
+    'climate justice', 'universal healthcare', 'wealth inequality', 'workers rights',
+    'corporate greed', 'immigration reform', 'social justice', 'activist', 'woke',
+]
+_BIAS_RIGHT = [
+    'liberal agenda', 'fake news media', 'mainstream media', 'deep state', 'second amendment',
+    'border security', 'illegal immigrants', 'traditional values', 'patriot', 'freedom fighters',
+    'government overreach', 'communist', 'marxist', 'constitutional rights', 'left-wing extremist',
+    'antifa', 'election fraud', 'radical left', 'make america great', 'globalist',
+]
+_CONSPIRACY_TERMS = [
+    'new world order', 'shadow government', 'chemtrails', 'microchip', 'satanic', 'illuminati',
+    'false flag', 'mind control', 'population control', 'reptilian', '5g', 'bill gates',
+    'george soros', 'they want you', 'they don\'t want you to know', 'secret agenda',
+    'crisis actor', 'plandemic', 'cabal',
+]
+_EMOTIONAL_MANIPULATION = [
+    'outrage', 'shocking', 'unbelievable', 'bombshell', 'explosive', 'breaking!', 'you won\'t believe',
+    'must see', 'incredible', 'terrifying', 'catastrophic', 'devastating', 'exposed!',
+    'they\'re hiding', 'wake up', 'share before deleted', 'banned information',
+]
+_SATIRE_MARKERS = [
+    'the onion', 'babylon bee', 'duffelblog', 'clickhole', 'theshovel', 'nationalreport',
+    'world news daily', 'empirenews', 'huzlers', 'newslo',
+]
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+
 class AIReasonerService:
     """
     AI Reasoning & Explainability Engine.
@@ -142,7 +174,8 @@ class AIReasonerService:
             'ai_summary': ai_summary,
             'ai_provider': ai_provider,
             'objectivity_pct': max(0, min(100, 100 - sentiment_metrics['subjectivity_score'])),
-            'journalistic_rigor': factuality_metrics['journalistic_rigor']
+            'journalistic_rigor': factuality_metrics['journalistic_rigor'],
+            'bias_analysis': BiasDetector.analyze(target_text if (target_text := str(text or '').strip()) else ''),
         }
 
     @staticmethod
@@ -332,3 +365,86 @@ class AIReasonerService:
         except Exception:
             pass
         return ""
+
+
+class BiasDetector:
+    """
+    Detects political lean, emotional manipulation, conspiracy language,
+    and satire markers in news text.
+    Returns a structured bias analysis report.
+    """
+
+    @staticmethod
+    def analyze(text: str) -> dict:
+        if not text:
+            return {'political_lean': 'neutral', 'bias_types': [], 'bias_score': 0, 'bias_summary': 'No bias indicators detected.'}
+
+        lower = text.lower()
+        words = lower.split()
+
+        # Score political lean
+        left_hits = [term for term in _BIAS_LEFT if term in lower]
+        right_hits = [term for term in _BIAS_RIGHT if term in lower]
+        conspiracy_hits = [term for term in _CONSPIRACY_TERMS if term in lower]
+        emotional_hits = [term for term in _EMOTIONAL_MANIPULATION if term in lower]
+        satire_hits = [term for term in _SATIRE_MARKERS if term in lower]
+
+        bias_types = []
+        bias_score = 0
+
+        left_score = len(left_hits) * 10
+        right_score = len(right_hits) * 10
+        conspiracy_score = len(conspiracy_hits) * 20
+        emotional_score = len(emotional_hits) * 15
+
+        if left_score > right_score and left_score >= 10:
+            political_lean = 'left'
+            bias_types.append(f'Left-leaning Language ({len(left_hits)} marker(s): {" / ".join(left_hits[:3])})')
+            bias_score += left_score
+        elif right_score > left_score and right_score >= 10:
+            political_lean = 'right'
+            bias_types.append(f'Right-leaning Language ({len(right_hits)} marker(s): {" / ".join(right_hits[:3])})')
+            bias_score += right_score
+        elif left_score > 0 or right_score > 0:
+            political_lean = 'center'
+        else:
+            political_lean = 'neutral'
+
+        if conspiracy_score > 0:
+            bias_types.append(f'Conspiracy Language ({len(conspiracy_hits)} term(s): {" / ".join(conspiracy_hits[:3])})')
+            bias_score += conspiracy_score
+
+        if emotional_score > 0:
+            bias_types.append(f'Emotional Manipulation ({len(emotional_hits)} trigger(s): {" / ".join(emotional_hits[:3])})')
+            bias_score += emotional_score
+
+        if satire_hits:
+            bias_types.append(f'Possible Satire Source ({" / ".join(satire_hits)})')
+            bias_score += 30
+
+        bias_score = min(100, bias_score)
+
+        # Generate summary
+        if not bias_types:
+            summary = 'No significant political lean, emotional manipulation, or conspiracy language detected.'
+        else:
+            parts = []
+            if political_lean in ('left', 'right'):
+                parts.append(f'Text exhibits {political_lean}-leaning framing')
+            if conspiracy_score > 0:
+                parts.append('contains conspiracy-adjacent terminology')
+            if emotional_score > 0:
+                parts.append('uses emotionally manipulative trigger language')
+            summary = '; '.join(parts).capitalize() + '.'
+
+        return {
+            'political_lean': political_lean,
+            'bias_types': bias_types,
+            'bias_score': bias_score,
+            'left_markers': left_hits[:5],
+            'right_markers': right_hits[:5],
+            'conspiracy_markers': conspiracy_hits[:5],
+            'emotional_markers': emotional_hits[:5],
+            'bias_summary': summary,
+        }
+
