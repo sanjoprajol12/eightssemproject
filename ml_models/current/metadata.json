@@ -1,0 +1,63 @@
+{
+  "model_version": "2.0.0",
+  "updated_at": "2026-09-30",
+  "primary_pipeline": "TF-IDF + Logistic Regression",
+  "classifiers": {
+    "logistic_regression": {
+      "path": "lr_model.pkl",
+      "algorithm": "LogisticRegression",
+      "vectorizer": "TF-IDF (1-2 ngrams)",
+      "features": 65536,
+      "f1_score": 0.884,
+      "accuracy": 0.887
+    },
+    "naive_bayes": {
+      "path": "nb_model.pkl",
+      "algorithm": "MultinomialNB",
+      "vectorizer": "TF-IDF (1-2 ngrams)",
+      "features": 65536,
+      "f1_score": 0.841,
+      "accuracy": 0.845
+    },
+    "linear_svm": {
+      "path": "svm_model.pkl",
+      "algorithm": "LinearSVC",
+      "vectorizer": "TF-IDF (1-2 ngrams)",
+      "features": 65536,
+      "f1_score": 0.879,
+      "accuracy": 0.882
+    },
+    "random_forest": {
+      "path": "rf_model.pkl",
+      "algorithm": "RandomForestClassifier",
+      "vectorizer": "TF-IDF (1-2 ngrams)",
+      "features": 65536,
+      "f1_score": 0.892,
+      "accuracy": 0.895
+    },
+    "sgd_incremental": {
+      "path": "sgd_logistic.pkl",
+      "algorithm": "SGDClassifier(loss='log_loss')",
+      "vectorizer": "HashingVectorizer(2^16 features)",
+      "features": 65536,
+      "supports_partial_fit": true,
+      "accuracy": 0.6315,
+      "precision": 0.6354,
+      "recall": 0.7504,
+      "f1_score": 0.6881,
+      "trained_samples": 10240,
+      "training_time_seconds": 0.33
+    },
+    "flask_pipeline": {
+      "path": "final_model.sav",
+      "algorithm": "Pipeline(TfidfVectorizer, LogisticRegression)",
+      "ngram_range": [
+        1,
+        4
+      ],
+      "max_features": 200000,
+      "accuracy": 0.912
+    }
+  },
+  "status": "active"
+}

@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Environments
+venv/
+env/
+ENV/
+.env
+
+# SQLite
+db.sqlite3
+db.sqlite3-journal
+
+# Large Model Files
+*.pkl
+*.sav
+ml_models/archive/
+accounts/ml_models/*.pkl
+accounts/ml_models/*.sav
+
+# Datasets (large)
+True.csv
+Fake.csv
+*.csv.bak
+train.tsv
+test.tsv
+valid.tsv
+
+# Media files
+media/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp

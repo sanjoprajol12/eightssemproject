@@ -1,0 +1,169 @@
+git init
+git remote add origin https://github.com/your-username/your-new-repo.git
+git remote -v
+
+
+git add .
+git commit -m "Initial commit for new repo"
+git push -u origin main
+
+
+
+
+<button 
+                className="btn btn-secondary"
+                onClick={handleRegisterRedirect}
+                disabled={isLoading}
+              >
+                Create Account
+              </button>
+
+
+
+
+
+
+
+
+              
+
+import os
+import pandas as pd
+import pickle
+import requests
+from bs4 import BeautifulSoup
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.svm import LinearSVC
+
+# -----------------------------
+# 1. Prepare directories
+# -----------------------------
+MODEL_DIR = os.path.join('accounts', 'ml_models')
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+BASE_DIR = os.path.dirname(__file__)
+
+# -----------------------------
+# 2. Scrape latest news (BBC example)
+# -----------------------------
+def fetch_latest_news():
+    url = "https://www.bbc.com/news"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    headlines = []
+    for h in soup.find_all("h3"):
+        text = h.get_text(strip=True)
+        if text and len(text.split()) > 4:  # filter out very short texts
+            headlines.append(text)
+
+    return headlines
+
+latest_news = fetch_latest_news()
+
+if latest_news:
+    true_csv_path = os.path.join(BASE_DIR, 'True.csv')
+    df_true = pd.read_csv(true_csv_path)
+
+    # Append new news as "real"
+    new_rows = pd.DataFrame({
+        "title": latest_news,
+        "text": [""] * len(latest_news),  # empty text column
+        "subject": ["latest"] * len(latest_news),
+        "date": ["now"] * len(latest_news)
+    })
+
+    # Concatenate and remove duplicates
+    df_true = pd.concat([df_true, new_rows], ignore_index=True).drop_duplicates(subset=["title"])
+
+    # Save updated True.csv
+    df_true.to_csv(true_csv_path, index=False)
+    print(f"✅ Added {len(latest_news)} latest headlines to True.csv")
+else:
+    print("⚠️ No latest news found, continuing with existing dataset.")
+
+# -----------------------------
+# 3. Load Kaggle Dataset
+# -----------------------------
+fake = pd.read_csv(os.path.join(BASE_DIR, 'Fake.csv'))
+true = pd.read_csv(os.path.join(BASE_DIR, 'True.csv'))
+
+fake['label'] = 0  # fake
+true['label'] = 1  # real
+kaggle_df = pd.concat([fake, true], ignore_index=True)
+kaggle_df['text'] = kaggle_df['title'] + " " + kaggle_df['text']
+kaggle_df = kaggle_df[['text', 'label']]
+
+# -----------------------------
+# 4. Load LIAR Dataset
+# -----------------------------
+def load_liar_dataset():
+    liar_train = pd.read_csv(os.path.join(BASE_DIR, 'train.tsv'), sep='\t', header=None, quoting=3)
+    liar_test = pd.read_csv(os.path.join(BASE_DIR, 'test.tsv'), sep='\t', header=None, quoting=3)
+    liar_valid = pd.read_csv(os.path.join(BASE_DIR, 'valid.tsv'), sep='\t', header=None, quoting=3)
+
+    liar_df = pd.concat([liar_train, liar_test, liar_valid])
+    liar_df = liar_df[[1, 2]]  # label, statement
+    liar_df.columns = ["label", "text"]
+
+    label_map = {
+        "pants-fire": 0,
+        "false": 0,
+        "barely-true": 0,
+        "half-true": 1,
+        "mostly-true": 1,
+        "true": 1
+    }
+    liar_df["label"] = liar_df["label"].map(label_map)
+    liar_df.dropna(subset=['label'], inplace=True)
+    liar_df['label'] = liar_df['label'].astype(int)
+    return liar_df
+
+liar_df = load_liar_dataset()
+
+# -----------------------------
+# 5. Combine datasets
+# -----------------------------
+combined_df = pd.concat([kaggle_df, liar_df], ignore_index=True)
+X = combined_df['text']
+y = combined_df['label']
+
+# -----------------------------
+# 6. Vectorize
+# -----------------------------
+vectorizer = TfidfVectorizer(stop_words='english', max_df=0.7)
+X_vec = vectorizer.fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X_vec, y, test_size=0.2, random_state=42)
+
+# -----------------------------
+# 7. Models
+# -----------------------------
+lr = LogisticRegression(max_iter=1000)
+nb = MultinomialNB()
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+svm = LinearSVC()
+
+# Train individual models
+lr.fit(X_train, y_train)
+nb.fit(X_train, y_train)
+rf.fit(X_train, y_train)
+svm.fit(X_train, y_train)
+
+# Voting Classifier
+voting_clf = VotingClassifier(
+    estimators=[('lr', lr), ('nb', nb), ('rf', rf), ('svm', svm)],
+    voting='hard'
+)
+voting_clf.fit(X_train, y_train)
+
+# -----------------------------
+# 8. Save models
+# -----------------------------
+pickle.dump(voting_clf, open(os.path.join(MODEL_DIR, 'voting_model.pkl'), 'wb'))
+pickle.dump(vectorizer, open(os.path.join(MODEL_DIR, 'tfidf.pkl'), 'wb'))
+
+print("✅ Model retrained with Kaggle + LIAR + latest news and saved in accounts/ml_models/")
