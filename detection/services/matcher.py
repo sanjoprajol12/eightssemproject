@@ -24,6 +24,14 @@ def sanitize_fts_query(query: str) -> str:
     return " OR ".join(f'"{kw}"' for kw in keywords)
 
 
+def _content_tokens(text: str) -> set[str]:
+    return {
+        token.lower()
+        for token in re.findall(r'[a-zA-Z0-9]+', text or '')
+        if len(token) > 2
+    }
+
+
 class NewsMatcher:
     """
     High-speed evidence matcher that replaces full CSV scans.
@@ -124,9 +132,13 @@ class NewsMatcher:
                     if rows:
                         top = rows[0]
                         rowid, title, summary, source, label, rank = top
-                        # Normalize rank: SQLite FTS5 rank typically between -0.01 and -20.0
-                        # Convert to 0.0 - 1.0 confidence proxy
-                        norm_score = round(min(1.0, max(0.5, abs(rank) / 10.0)), 2)
+                        # BM25 rank is only useful when the returned document also
+                        # covers the query terms; OR queries otherwise match common words.
+                        query_tokens = _content_tokens(stripped)
+                        document_tokens = _content_tokens(f'{title} {summary}')
+                        overlap = len(query_tokens & document_tokens) / max(len(query_tokens), 1)
+                        rank_score = abs(float(rank)) / (abs(float(rank)) + 1.0)
+                        norm_score = round((rank_score + overlap) / 2.0, 3)
 
                         return {
                             'matched': True,
@@ -136,6 +148,10 @@ class NewsMatcher:
                             'source': source or 'Indexed News Corpus',
                             'label': label,
                             'score': norm_score,
+                            'bm25_rank': round(float(rank), 4),
+                            'bm25_score': round(rank_score, 3),
+                            'overlap_score': round(overlap, 3),
+                            'match_strength': 'strong' if rank_score > 0.75 and overlap > 0.85 else 'weak',
                             'total_candidates': len(rows)
                         }
             except Exception as e:

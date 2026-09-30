@@ -87,7 +87,10 @@ class AIReasonerService:
 
         if evidence.get('indexed_corpus_match') and evidence.get('matched_corpus_label') == 'real':
             sim = evidence.get('similarity_score', 0)
-            why_real.append(f"Corpus Corroboration: High semantic correspondence ({int(sim*100)}% similarity) with verified authentic news records.")
+            if evidence.get('corpus_match_strength') == 'strong':
+                why_real.append(f"Corpus Corroboration: Strong correspondence ({int(sim*100)}% similarity) with verified authentic news records.")
+            else:
+                why_real.append("Weak Corpus Match: A related indexed record was found, but it was excluded from the verdict because the overlap was insufficient.")
 
         if linguistic_signals and linguistic_signals.get('has_attribution'):
             why_real.append("Journalistic Attribution: Contains direct citations of recognized news agencies, official spokespersons, or verified institutions.")

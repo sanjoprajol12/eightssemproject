@@ -102,6 +102,13 @@ Open your browser to:
 python front.py
 # Runs on http://127.0.0.1:5000/
 ```
+cd "C:\Users\sanjo\OneDrive\Desktop\8th sem project\FakeNewsDetect"
+..\venv\Scripts\python.exe manage.py 
+
+cd "C:\Users\sanjo\OneDrive\Desktop\8th sem project\FakeNewsDetect"
+..\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+
+
 
 ---
 

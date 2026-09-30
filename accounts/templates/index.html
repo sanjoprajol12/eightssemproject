@@ -312,6 +312,7 @@
                 <button class="btn-action" id="shareLinkBtn" onclick="shareResult()">&#128279; Copy Result Link</button>
                 <button class="btn-action" onclick="window.print()">&#128438; Print / PDF</button>
                 <button class="btn-action" id="copyJsonBtn" onclick="copyJson()">&#128203; Copy JSON</button>
+                <button class="btn-action" id="downloadJsonBtn" onclick="downloadJson()">&#11015; Download JSON</button>
             </div>
 
             <!-- SVG Radial Confidence Gauge -->
@@ -517,6 +518,7 @@ function renderBias(biasData) {
     if (!biasData) return;
     const lean = (biasData.political_lean || 'neutral').toLowerCase();
     const badge = document.getElementById('biasLeanBadge');
+    if (!badge) return;
     badge.textContent = lean.charAt(0).toUpperCase() + lean.slice(1);
     badge.className = 'bias-lean ' + lean;
 
@@ -559,11 +561,46 @@ function shareResult() {
 function copyJson() {
     if (!_lastResult) return;
     const btn = document.getElementById('copyJsonBtn');
-    navigator.clipboard && navigator.clipboard.writeText(JSON.stringify(_lastResult, null, 2)).then(() => {
+    const json = JSON.stringify(_lastResult, null, 2);
+    const finish = () => {
         btn.textContent = '✓ Copied!';
         btn.classList.add('copied');
         setTimeout(() => { btn.textContent = '📋 Copy JSON'; btn.classList.remove('copied'); }, 2200);
-    });
+    };
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(json).then(finish).catch(() => fallbackCopy(json, finish));
+    } else {
+        fallbackCopy(json, finish);
+    }
+}
+
+function fallbackCopy(text, onSuccess) {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    try {
+        if (document.execCommand('copy')) onSuccess();
+    } finally {
+        area.remove();
+    }
+}
+
+function downloadJson() {
+    if (!_lastResult) return;
+    const blob = new Blob([JSON.stringify(_lastResult, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.href = url;
+    link.download = `truthlens-report-${stamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
 }
 
 // ── Main Analysis ─────────────────────────────────────────────────────────────
@@ -724,11 +761,12 @@ function renderResult(data) {
     // Word Credibility Heatmap
     const inputText = data.query_text || document.getElementById('newsInput').value || '';
     const heatmapEl = document.getElementById('heatmapText');
-    if (inputText.trim()) {
+    const heatmapCard = document.getElementById('heatmapCard');
+    if (heatmapEl && heatmapCard && inputText.trim()) {
         heatmapEl.innerHTML = buildHeatmap(inputText);
-        document.getElementById('heatmapCard').style.display = 'block';
-    } else {
-        document.getElementById('heatmapCard').style.display = 'none';
+        heatmapCard.style.display = 'block';
+    } else if (heatmapCard) {
+        heatmapCard.style.display = 'none';
     }
 
     // XAI

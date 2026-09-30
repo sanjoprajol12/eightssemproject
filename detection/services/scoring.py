@@ -2,6 +2,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+BM25_MIN = 0.75
+SIMILARITY_MIN = 0.85
+PROBABILITY_FLOOR = 0.03
+PROBABILITY_CEILING = 0.97
+
 
 class EnsembleScorer:
     """
@@ -74,45 +79,33 @@ class EnsembleScorer:
                         'is_inconclusive': False
                     }
 
-        # 3. Exact Hash or Strong FTS Match against Indexed Corpus
+        # 3. Corpus evidence is corroboration, not a verdict. Exact hashes are
+        # retained as strong evidence; ordinary FTS hits must pass both checks.
+        corpus_adjustment = 0.0
         if corpus_match.get('matched'):
             match_type = corpus_match.get('match_type')
             label = corpus_match.get('label')
             matched_title = corpus_match.get('title', '')
             score = corpus_match.get('score', 0.5)
 
+            bm25_score = corpus_match.get('bm25_score', 0.0)
+            similarity_score = corpus_match.get('overlap_score', score)
+            strong_corpus_match = (
+                match_type == 'fts5_bm25'
+                and bm25_score > BM25_MIN
+                and similarity_score > SIMILARITY_MIN
+            )
             if match_type == 'index_hash_exact':
-                if label == 'real':
-                    evidence_points.append(f"Exact hash match in verified news corpus: '{matched_title[:60]}'")
-                    return {
-                        'result': 'Real News',
-                        'confidence': 96.0,
-                        'primary_source': 'Indexed News Corpus (Exact Hash)',
-                        'evidence_summary': evidence_points,
-                        'is_inconclusive': False
-                    }
-                else:
-                    evidence_points.append(f"Exact hash match in verified fake news database: '{matched_title[:60]}'")
-                    return {
-                        'result': 'Fake News',
-                        'confidence': 96.0,
-                        'primary_source': 'Indexed Fake News Archive (Exact Hash)',
-                        'evidence_summary': evidence_points,
-                        'is_inconclusive': False
-                    }
-            elif match_type == 'fts5_bm25' and score >= 0.75:
-                if label == 'real':
-                    evidence_points.append(f"High-ranking match in indexed real news corpus: '{matched_title[:60]}'")
-                    final_label = 'Real News'
-                    confidence = max(confidence, round(score * 100, 1))
-                    primary_source = 'FTS5 Indexed Corpus Match'
-                    is_definitive = True
-                elif label == 'fake':
-                    evidence_points.append(f"High-ranking match in indexed fake news corpus: '{matched_title[:60]}'")
-                    final_label = 'Fake News'
-                    confidence = max(confidence, round(score * 100, 1))
-                    primary_source = 'FTS5 Fake Corpus Match'
-                    is_definitive = True
+                evidence_points.append(f"Exact corpus match found: '{matched_title[:60]}'")
+                corpus_adjustment = -0.15 if label == 'real' else 0.15
+            elif strong_corpus_match:
+                evidence_points.append(f"Strong corpus corroboration: '{matched_title[:60]}'")
+                corpus_adjustment = -0.15 if label == 'real' else 0.15
+            else:
+                evidence_points.append(
+                    f"Weak corpus match ignored for scoring: '{matched_title[:60]}' "
+                    f"(BM25 {bm25_score:.2f}, overlap {similarity_score:.2f})."
+                )
 
         # 4. Domain Reputation Evidence (if URL input)
         domain_weight = 0.0
@@ -131,8 +124,8 @@ class EnsembleScorer:
                     'is_inconclusive': False
                 }
 
-        # 5. ML Models Consensus
-        # Valid models: logistic_regression, naive_bayes, linear_svm, sgd_incremental, flask_pipeline
+        # 5. ML Models Consensus. Stored probabilities represent P(real) for
+        # the current models, so invert their mean to obtain P(fake).
         valid_probs = []
         model_votes = []
 
@@ -151,26 +144,32 @@ class EnsembleScorer:
         else:
             avg_real_prob = 0.50
 
-        # Adjust with domain credibility if present
-        adjusted_real_prob = min(0.99, max(0.01, avg_real_prob + domain_weight))
+        p_fake = 1.0 - avg_real_prob
+        spread = (max(valid_probs) - min(valid_probs)) if valid_probs else 0.0
+        p_fake += corpus_adjustment
+        p_fake -= domain_weight
+        p_fake = max(PROBABILITY_FLOOR, min(PROBABILITY_CEILING, p_fake))
 
         if not is_definitive:
-            if adjusted_real_prob >= 0.65:
-                final_label = 'Real News'
-                confidence = round(adjusted_real_prob * 100, 1)
-                primary_source = 'Ensemble ML Classifiers'
-                evidence_points.append(f"ML models consensus: {int(adjusted_real_prob * 100)}% probability of authentic reporting.")
-            elif adjusted_real_prob <= 0.38:
-                final_label = 'Fake News'
-                fake_prob = 1.0 - adjusted_real_prob
-                confidence = round(fake_prob * 100, 1)
-                primary_source = 'Ensemble ML Classifiers'
-                evidence_points.append(f"ML models consensus: {int(fake_prob * 100)}% probability of fabricated or unverified claims.")
-            else:
+            if spread > 0.5 or 0.35 < p_fake < 0.65:
                 final_label = 'Inconclusive'
-                confidence = round(max(adjusted_real_prob, 1.0 - adjusted_real_prob) * 100, 1)
-                primary_source = 'Multi-Signal Analysis (Borderline)'
-                evidence_points.append("Conflicting or insufficient evidence between models and indexing.")
+                confidence = round(max(p_fake, 1.0 - p_fake) * 100, 1)
+                primary_source = 'Multi-Signal Analysis (Conflicting)'
+                evidence_points.append(
+                    f"Models disagree (probability spread {spread:.2f}); evidence is not decisive."
+                )
+            elif p_fake >= 0.65:
+                final_label = 'Fake News'
+                confidence = round(p_fake * 100, 1)
+                primary_source = 'Ensemble ML Classifiers'
+                evidence_points.append(f"ML models consensus: {int(p_fake * 100)}% probability of fabricated or unverified claims.")
+            else:
+                final_label = 'Real News'
+                confidence = round((1.0 - p_fake) * 100, 1)
+                primary_source = 'Ensemble ML Classifiers'
+                evidence_points.append(f"ML models consensus: {int((1.0 - p_fake) * 100)}% probability of authentic reporting.")
+
+        confidence = min(97.0, max(3.0, confidence))
 
         if not evidence_points:
             evidence_points.append("Evaluated across indexed corpus and trained linear models.")

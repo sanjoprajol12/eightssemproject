@@ -248,6 +248,7 @@ class FakeNewsDetector:
                 'indexed_corpus_match': corpus_match.get('matched', False),
                 'matched_corpus_label': corpus_match.get('label') if corpus_match.get('matched') else None,
                 'similarity_score': corpus_match.get('score', 0.0),
+                'corpus_match_strength': corpus_match.get('match_strength', 'none'),
                 'fact_check_match': factcheck_res.get('matched', False),
             },
             models={
@@ -280,6 +281,9 @@ class FakeNewsDetector:
                 'indexed_corpus_match': corpus_match.get('matched', False),
                 'matched_corpus_label': corpus_match.get('label') if corpus_match.get('matched') else None,
                 'similarity_score': corpus_match.get('score', 0.0),
+                'bm25_score': corpus_match.get('bm25_score', 0.0),
+                'overlap_score': corpus_match.get('overlap_score', 0.0),
+                'corpus_match_strength': corpus_match.get('match_strength', 'none'),
                 'fact_check_match': factcheck_res.get('matched', False),
                 'evidence_points': verdict['evidence_summary']
             },

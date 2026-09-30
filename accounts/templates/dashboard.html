@@ -755,6 +755,7 @@ const perPage = 10;
 let editingArticleId = null;
 let deletingArticleId = null;
 let activeDetectTab = 'text';
+const adminDetectionResults = {};
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -863,6 +864,7 @@ async function quickDetect() {
 
 function showDetectResult(elId, data) {
     const el = document.getElementById(elId);
+    adminDetectionResults[elId] = data;
     const result = data.result || data.credibility_report?.result || 'Inconclusive';
     const confidence = parseFloat(data.confidence || data.credibility_report?.confidence || 50).toFixed(1);
     const source = data.source || data.credibility_report?.source || '';
@@ -910,8 +912,61 @@ function showDetectResult(elId, data) {
         ${aiSummary ? `<div style="margin-top:0.6rem;padding:0.6rem 0.8rem;background:rgba(99,102,241,0.08);border-radius:6px;font-size:0.825rem;line-height:1.5;color:var(--text);border-left:2px solid var(--accent)"><strong>&#129302; AI Analysis:</strong> ${escHtml(aiSummary)}</div>` : ''}
         ${reasonsHtml}
         ${modelTags ? '<div class="result-models">' + modelTags + '</div>' : ''}
+        <div class="result-actions" style="margin-top:0.85rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+            <button class="btn-sm" onclick="copyDashboardJson('${elId}')">&#128203; Copy JSON</button>
+            <button class="btn-sm" onclick="downloadDashboardJson('${elId}')">&#11015; Download JSON</button>
+            <button class="btn-sm" onclick="window.print()">&#128438; Print / PDF</button>
+        </div>
     `;
     el.style.display = 'block';
+}
+
+function copyDashboardJson(elId) {
+    const result = adminDetectionResults[elId];
+    if (!result) return;
+    const json = JSON.stringify(result, null, 2);
+    const done = () => {
+        const button = document.querySelector('#' + elId + ' .result-actions button');
+        if (!button) return;
+        const original = button.innerHTML;
+        button.textContent = '✓ Copied!';
+        setTimeout(() => { button.innerHTML = original; }, 1800);
+    };
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(json).then(done).catch(() => fallbackDashboardCopy(json, done));
+    } else {
+        fallbackDashboardCopy(json, done);
+    }
+}
+
+function fallbackDashboardCopy(text, done) {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    try {
+        if (document.execCommand('copy')) done();
+    } finally {
+        area.remove();
+    }
+}
+
+function downloadDashboardJson(elId) {
+    const result = adminDetectionResults[elId];
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.href = url;
+    link.download = `truthlens-admin-report-${stamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
 }
 
 function clearDetect() {
@@ -919,6 +974,7 @@ function clearDetect() {
     document.getElementById('detectUrl').value = '';
     document.getElementById('detectResult').style.display = 'none';
     document.getElementById('detectError').style.display = 'none';
+    delete adminDetectionResults.detectResult;
 }
 
 // ── Load Stats ──
@@ -1237,6 +1293,9 @@ async function loadSystemStats() {
     } catch(e) {
         errEl.textContent = 'Failed to load stats: ' + e.message;
         errEl.style.display = 'block';
+    }
+}
+
 // ── Detection Logs & History ──
 let currentHistoryPage = 1;
 let allHistoryLogs = [];

@@ -2,6 +2,7 @@ import json
 from django.test import TestCase, Client
 from detection.models import DetectionLog
 from detection.services.ai_reasoner import AIReasonerService
+from detection.services.scoring import EnsembleScorer
 
 
 class DetectionAPITests(TestCase):
@@ -107,3 +108,45 @@ class DetectionAPITests(TestCase):
         self.assertIn('ai_summary', analysis)
         self.assertIn('sentiment_analysis', analysis)
         self.assertIn('TruthLens', analysis['ai_provider'])
+
+    def test_weak_corpus_match_cannot_override_models(self):
+        verdict = EnsembleScorer.calculate_verdict(
+            article_match={'matched': False},
+            corpus_match={
+                'matched': True,
+                'match_type': 'fts5_bm25',
+                'label': 'real',
+                'title': 'Unrelated indexed article',
+                'score': 1.0,
+                'bm25_score': 0.95,
+                'overlap_score': 0.20,
+            },
+            model_predictions={'a': 0, 'b': 1},
+            model_probabilities={'a': 0.48, 'b': 0.52},
+            factcheck_res={'matched': False},
+        )
+
+        self.assertEqual(verdict['result'], 'Inconclusive')
+        self.assertLess(verdict['confidence'], 97.0)
+        self.assertIn('Weak corpus match ignored', verdict['evidence_summary'][0])
+
+    def test_model_disagreement_abstains_and_confidence_is_capped(self):
+        uncertain = EnsembleScorer.calculate_verdict(
+            article_match={'matched': False},
+            corpus_match={'matched': False},
+            model_predictions={},
+            model_probabilities={'a': 0.10, 'b': 0.90},
+            factcheck_res={'matched': False},
+        )
+        saturated = EnsembleScorer.calculate_verdict(
+            article_match={'matched': False},
+            corpus_match={'matched': False},
+            model_predictions={},
+            model_probabilities={'a': 0.0, 'b': 0.0},
+            factcheck_res={'matched': False},
+        )
+
+        self.assertEqual(uncertain['result'], 'Inconclusive')
+        self.assertEqual(uncertain['confidence'], 50.0)
+        self.assertEqual(saturated['result'], 'Fake News')
+        self.assertEqual(saturated['confidence'], 97.0)
