@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Fake News Detection
 
 Fake News Detection in Python
@@ -169,3 +170,6 @@ $ git clone https://github.com/nishitpatel01/Fake_News_Detection.git
 
     - Once you hit the enter, program will take user input (news headline) and will be used by model to classify in one of  categories of "True" and "False". Along with classifying the news headline, model will also provide a probability of truth associated with it.
 
+=======
+# eightssemproject
+>>>>>>> 94e047f440fde416af561a0be7cde50fce9aeb82
