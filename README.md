@@ -1,184 +1,297 @@
-# TruthLens — AI-Powered Fake News Detection System
+# TruthLens — AI-Powered Fake News Detection Platform
 
-TruthLens is an enterprise-grade Fake News Detection and Fact-Checking Platform that blends natural language processing, multi-model ensemble machine learning, full-text corpus indexing (FTS5), domain reputation analysis, and an interactive dark glassmorphic web dashboard.
+TruthLens is an enterprise-grade Fake News Detection and Fact-Checking Platform that blends natural language processing, multi-model ensemble machine learning, SQLite FTS5 full-text corpus indexing, domain credibility verification, and a modern React (Vite) single-page application.
 
 ---
 
 ## 🚀 Key Features & Capabilities
 
-- **Hybrid Detection & Free AI Reasoning Pipeline**:
-  - **FTS5 Corpus Matching**: Sub-millisecond full-text search against verified real and fake news corpora.
-  - **Ensemble Machine Learning**: Integrates multiple classifiers including Logistic Regression, Naive Bayes, Decision Trees, Linear SVM, SGD, and Random Forest.
-  - **Why It Is Real vs. Why It Is Fake (Deep Analysis)**: Generates dual-factor structured evidence grids highlighting journalistic attributions, factual entity density, clickbait triggers, and emotional manipulation patterns.
-  - **Free AI Reasoning Engine**: Built-in zero-shot neural reasoner with NLTK VADER sentiment analysis, objectivity scoring, and automatic fallback support for free cloud LLM inference (Groq/HuggingFace).
-  - **Domain & URL Analysis**: SSRF-protected URL content scraper, domain reputation scoring, and SSL/TLD trust evaluation.
-  - **Exportable Fact-Check Audit**: Print-ready, branded fact-check verification certificates.
+- **Hybrid Detection Pipeline**:
+  - **FTS5 Corpus Matching**: Sub-millisecond full-text search against 14,000+ verified benchmark news statements (`train.csv`, `valid.csv`, `test.csv`, and LIAR dataset).
+  - **Ensemble Machine Learning**: Integrates multiple classifiers (Logistic Regression, Naive Bayes, Decision Trees, Linear SVM, SGD, Random Forest) with TF-IDF n-gram vectorization.
+  - **Forensic Evidence & Explainability**: Structured evidence grids with "Why Real vs. Why Fake" factor breakdowns, journalistic source attribution, factual entity density, and emotional clickbait indicators.
+  - **Domain & URL Analysis**: SSRF-protected article scraper, domain reputation rating, and SSL trust evaluation.
+  - **Exportable Fact-Check Certificates**: Instant, printable verification reports for users and journalists.
 
-- **Unified Glassmorphism UI (Min-UI Design System)**:
-  - Deep navy and indigo palette (`#080c14`, `#6366f1`, `#06b6d4`, `#10b981`, `#f43f5e`).
-  - **Public Detector (`/`)**: Asynchronous text & URL verification with animated confidence gauges, AI executive summary, dual Why Real / Why Fake cards, objectivity and emotional charge meters, and print-ready fact-check export.
-  - **Admin Authentication (`/login/`, `/register/`)**: Secure session-based authentication with animated feedback.
-  - **Interactive Admin Dashboard (`/dashboard/`)**: Pure vanilla JS & CSS, overview metric cards, recent articles table, quick detector, complete Article CRUD with image uploads, system telemetry panel, in-place profile management, and a dedicated **Detection Logs & Audit Trail** browser with search and inspection modal.
+- **Unified React SPA Frontend**:
+  - **Public News Detector (`facknews.local`)**: Live statement & URL verification, sentiment analysis gauges, objectivity meters, contact enquiry form, and real-time evidence cards.
+  - **Admin Control Portal (`portal.appur` / `portal.facknews.local`)**: Secure token-based authentication, interactive detection statistics, human-in-the-loop review queue, and CMS management.
 
-- **Enterprise Security**:
-  - Constant-time password validation & Django `pbkdf2_sha256` password hashing.
-  - Automatic, seamless migration of legacy plaintext admin credentials to salted PBKDF2 hashes upon login.
-  - CSRF cookie validation across all mutating API endpoints (`POST`, `PUT`, `DELETE`).
+- **Domain-Based Routing**:
+  - `facknews.local` (or `APP_URL`): Directs visitors to the public detector and about/contact portal.
+  - `portal.appur` / `portal.facknews.local` (or `PORTAL_URL`): Directs users to the admin login, or straight to the admin dashboard if already authenticated.
 
 ---
 
 ## 📂 Architecture Overview
 
 ```
-Fake_News_Detection/
-├── accounts/                  # Authentication, Admin & Article Management
-│   ├── models.py             # Admin and Article models
-│   ├── views.py              # Login, register, profile_api, article CRUD, dashboard views
-│   ├── templates/            # Modern dark glassmorphic templates
-│   │   ├── index.html        # Public detector landing page
-│   │   ├── login.html        # Admin login page
-│   │   ├── register.html     # Admin registration page
-│   │   └── dashboard.html    # Full vanilla JS admin control room
-│   └── tests.py              # Automated auth, profile, and article CRUD test suite
+/var/www/facknews/
+├── apps/
+│   ├── authentication/        # Custom User model, token auth, admin seeder
+│   │   ├── management/commands/seed_admin.py
+│   │   └── views.py
+│   ├── cms/                   # CMS viewsets (Enquiries, NewsAndUpdate, Sliders, Teams, etc.)
+│   │   ├── models.py
+│   │   └── views.py
+│   └── core/                  # Core SPA index_view, permissions, pagination
+│       └── views.py
 │
 ├── detection/                 # Core Detection Engine & Microservices
-│   ├── models.py             # IndexedNews, DetectionLog
-│   ├── views.py              # /api/detect/, /detect/, /api/detect/url/, /api/system/stats/
+│   ├── models.py              # IndexedNews, DetectionLog, Article
+│   ├── views.py               # /api/detect/, /api/articles/, /api/review-queue/, /api/history/
 │   ├── services/
-│   │   ├── detector.py       # High-level FakeNewsDetector orchestrator
-│   │   ├── matcher.py        # FTS5 SQLite indexed corpus matcher
-│   │   ├── ensemble.py       # Multi-model prediction combiner
-│   │   ├── scraper.py        # Safe URL content extractor
-│   │   └── scoring.py        # Confidence calibration & verdict calculation
-│   └── tests.py              # Detection API and validation tests
+│   │   ├── detector.py        # FakeNewsDetector orchestrator
+│   │   ├── matcher.py         # SQLite FTS5 corpus matcher
+│   │   ├── scoring.py         # Calibrated confidence & ground-truth scorer
+│   │   ├── domain_analyzer.py # URL content extractor & domain trust
+│   │   └── ensemble.py        # Multi-model prediction combiner
+│   └── management/commands/
+│       └── index_dataset.py   # Ingests train/test/valid CSVs into SQLite FTS5 index
 │
 ├── FakeNewsDetect/            # Django Project Configuration
-│   ├── settings.py           # Database, template priority, static & media configs
-│   └── urls.py               # Root URL router
+│   ├── settings.py            # Unified settings, static, CORS, templates
+│   ├── urls.py                # Central URL routing
+│   └── wsgi.py                # WSGI entrypoint for Gunicorn
 │
-├── front.py                   # Complementary Flask detector
-├── train_model.py             # Model training & serialization pipeline
-├── final_model.sav            # Trained scikit-learn TF-IDF + Logistic Regression model
-└── manage.py                  # Django CLI entrypoint
+├── frontend/                  # Modern React + Vite Single-Page Application
+│   ├── src/                   # React components, pages, contexts, styling
+│   ├── dist/                  # Production build served directly by Apache/Django
+│   ├── package.json
+│   └── vite.config.js
+│
+├── ml_models/                 # Serialized model pickles
+├── train_model.py             # Scikit-learn TF-IDF + Logistic Regression training pipeline
+├── final_model.sav            # Pre-trained production classification model
+├── train.csv, test.csv, valid.csv  # Benchmark news datasets (14,000+ labeled statements)
+├── manage.py                  # Django CLI entrypoint (auto-activates .venv)
+└── requirements.txt           # Python dependency requirements
 ```
 
 ---
 
-## 🛠️ Getting Started
+## 🛠️ Complete Terminal Commands Guide
 
-### 1. Prerequisites
-- Python 3.10, 3.11, or 3.12
-- Virtual environment (`venv`)
-
-### 2. Setup & Installation
-
-Activate the virtual environment and install dependencies:
-
+All primary administrative tasks can be run directly from the project root:
 ```bash
-# On Windows PowerShell
-.\venv\Scripts\Activate.ps1
+cd /var/www/facknews
+```
+
+---
+
+### 1. Environment & Dependencies
+
+#### Activate the Virtual Environment:
+```bash
+# Linux / macOS
+source .venv/bin/activate
+```
+
+#### Install / Update Dependencies:
+```bash
+# Using uv (fastest)
+uv pip install -r requirements.txt
+
+# Or using standard pip
 pip install -r requirements.txt
 ```
 
-### 3. Run Database Migrations
+---
 
+### 2. Database Migrations
+
+#### Create New Migrations (when modifying models):
+```bash
+python manage.py makemigrations
+```
+
+#### Apply All Pending Migrations:
 ```bash
 python manage.py migrate
 ```
 
-### 4. Start the Django Server
-
+#### Check Migration Status:
 ```bash
+python manage.py showmigrations
+```
+
+---
+
+### 3. Model Training & Dataset Indexing
+
+#### Train the Fake News ML Model from Scratch:
+```bash
+python train_model.py
+```
+> Reads `train.csv` and `test.csv`, extracts TF-IDF n-gram features, trains a Logistic Regression pipeline, evaluates precision/recall/F1 metrics, and serializes the model to `final_model.sav`.
+
+#### Index Benchmark Datasets into SQLite FTS5:
+```bash
+python manage.py index_dataset
+```
+> Parses `train.csv`, `valid.csv`, `test.csv`, and LIAR dataset files. Ingests and SHA-256 deduplicates 14,000+ ground-truth statements into the `IndexedNews` table and SQLite FTS5 virtual table for instantaneous sub-millisecond lookups.
+
+---
+
+### 4. Admin Seeder & Superuser Creation
+
+#### Seed the Default Admin Account:
+```bash
+python manage.py seed_admin
+```
+- **Email**: `pashupati@python.py`
+- **Password**: `Forgot911!`
+- **Role**: `admin`
+
+#### Create a Custom Django Superuser:
+```bash
+python manage.py createsuperuser
+```
+
+---
+
+### 5. Running the Application Server
+
+#### Option A: Running as Background Service (Default & Recommended)
+The server runs continuously via systemd user service on `127.0.0.1:8000`, reverse-proxied by Apache on Port 80:
+```bash
+# Check service status
+systemctl --user status facknews
+
+# Restart background server
+systemctl --user restart facknews
+
+# Stop background server
+systemctl --user stop facknews
+
+# Start background server
+systemctl --user start facknews
+
+# View live background server logs
+journalctl --user-unit=facknews -f
+```
+
+#### Option B: Running Interactively in Terminal
+If you want to view real-time request logs directly in your terminal, stop the background service first to release port 8000:
+```bash
+systemctl --user stop facknews
 python manage.py runserver 127.0.0.1:8000
+
+# Or using the built-in terminal alias:
+runserver
 ```
 
-Open your browser to:
-- **Public Detector**: `http://127.0.0.1:8000/`
-- **Admin Login**: `http://127.0.0.1:8000/login/`
-- **Admin Dashboard**: `http://127.0.0.1:8000/dashboard/`
-
-*(Optional) To run the lightweight Flask application:*
+#### Option C: Production Gunicorn Runner:
 ```bash
-python front.py
-# Runs on http://127.0.0.1:5000/
+gunicorn FakeNewsDetect.wsgi:application --bind 127.0.0.1:8000 --workers 3 --timeout 120
 ```
-cd "C:\Users\sanjo\OneDrive\Desktop\8th sem project\FakeNewsDetect"
-..\venv\Scripts\python.exe manage.py 
 
-cd "C:\Users\sanjo\OneDrive\Desktop\8th sem project\FakeNewsDetect"
-..\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+---
 
+### 6. Apache Web Server Configuration
 
+Apache is configured as a high-performance reverse proxy that serves static assets directly from `frontend/dist` and proxies application traffic to Django:
+
+```bash
+# Test Apache configuration syntax
+apache2ctl -t
+
+# Reload Apache without downtime
+systemctl reload apache2
+
+# Restart Apache service
+sudo systemctl restart apache2
+```
+
+Configuration file: `/etc/apache2/sites-available/facknews.local.conf`
+
+---
+
+### 7. Frontend Development (React + Vite)
+
+The frontend lives in the `frontend/` directory.
+
+```bash
+cd /var/www/facknews/frontend
+
+# Install node dependencies
+npm install
+
+# Start Vite live-reload dev server (runs on http://localhost:5173)
+npm run dev
+
+# Build production bundle (compiles into frontend/dist)
+npm run build
+```
+
+---
+
+### 8. Running the Automated Test Suite
+
+TruthLens includes comprehensive automated tests covering authentication, CMS enquiries, ML prediction pipelines, and REST APIs:
+
+```bash
+# Run all tests
+python manage.py test
+
+# Run tests with detailed verbose output
+python manage.py test -v 2
+
+# Run authentication app tests
+python manage.py test apps.authentication
+
+# Run CMS enquiries tests
+python manage.py test apps.cms
+
+# Run detection engine tests
+python manage.py test detection
+```
 
 ---
 
 ## 🔑 Default Credentials
 
-| Email | Password | Role |
+| Portal | Email | Password | Role |
+| :--- | :--- | :--- | :--- |
+| **Admin Portal** | `pashupati@python.py` | `Forgot911!` | Super Administrator |
+| **Admin Portal (Legacy)** | `admin@gmail.com` | `admin123` | Administrator |
+
+---
+
+## 🌐 URLs & Access Points
+
+| Service | URL | Description |
 | :--- | :--- | :--- |
-| `admin@gmail.com` | `admin123` | Default Admin |
-| `pashupatisah35@gmail.com` | `123456789` | Fact-Check Admin |
-
-*(Note: Passwords are automatically upgraded to `pbkdf2_sha256` hashing upon initial login).*
-
----
-
-## 📡 API Reference
-
-### 1. Public / Client Detection
-- **`POST /detect/`** (or **`POST /api/detect/`**)
-  - **Body** (JSON or Form): `{"content": "News text or headline to analyze..."}`
-  - **Response**:
-    ```json
-    {
-      "result": "Real News | Fake News | Inconclusive",
-      "confidence": 95.5,
-      "source": "FTS5 Indexed Corpus Match | ML Ensemble Pipeline",
-      "models": {
-        "predictions": {
-          "logistic_regression": "Real News",
-          "naive_bayes": "Real News",
-          "random_forest": "Real News"
-        }
-      },
-      "evidence": {
-        "matches": [...],
-        "match_count": 3
-      },
-      "explanation": ["Matched known verified article in corpus..."]
-    }
-    ```
-
-- **`POST /api/detect/url/`**
-  - **Body**: `{"url": "https://reuters.com/world/article-headline"}`
-  - **Response**: Full credibility report including domain reputation and extracted content score.
-
-### 2. Telemetry & Articles
-- **`GET /api/system/stats/`**: Returns database size, total detections, indexed articles count, and retention policy.
-- **`GET /api/articles/`**: Returns all news articles (JSON).
-- **`POST /api/articles/`**: Creates a new article (requires authenticated session & CSRF).
-- **`GET /api/articles/<id>/`**: Fetches single article details.
-- **`PUT /api/articles/<id>/`**: Updates an existing article.
-- **`DELETE /api/articles/<id>/`**: Deletes an article and cleans up stored image files.
-- **`GET /api/profile/`**: Fetches current admin details.
-- **`POST /api/profile/`**: Updates current admin profile in-place.
+| **Public Detector** | [http://facknews.local](http://facknews.local) | News statement verification, URL detector, About & Contact Us |
+| **Admin Portal** | [http://portal.facknews.local](http://portal.facknews.local) | Administrator login & TruthLens monitoring dashboard |
+| **Alt Portal Domain** | [http://portal.appur](http://portal.appur) | Secondary portal domain configured in `.env` |
+| **Django Admin** | [http://facknews.local/admin/](http://facknews.local/admin/) | Django built-in model administration |
 
 ---
 
-## 🧪 Automated Testing
+## 📡 API Endpoints Reference
 
-TruthLens includes an automated test suite verifying all critical paths:
+### 1. Detection APIs
+- **`POST /api/detect/`**: Verify text statement (JSON: `{"content": "..."}`).
+- **`POST /api/detect/url/`**: Verify web article from URL (JSON: `{"url": "https://..."}`).
+- **`POST /api/source/check/`**: Evaluate domain credibility & historical fake rate.
+- **`POST /detect/`**: Legacy backward-compatible detection endpoint.
 
-```bash
-# Run the complete test suite
-python manage.py test
+### 2. Monitoring & Dashboard APIs
+- **`GET /api/system/stats/`**: Database size, total detections, indexed news count, and retention policy.
+- **`GET /api/history/`**: Paginated detection audit log.
+- **`GET /api/review-queue/`**: Borderline detections awaiting human review.
+- **`POST /api/detections/<id>/review/`**: Submit human reviewer override verdict.
+- **`GET /api/articles/`**: Curated articles repository list.
+- **`POST /api/articles/`**: Create new curated article.
+- **`PUT /api/articles/<id>/`**: Edit article.
+- **`DELETE /api/articles/<id>/`**: Delete article.
 
-# Run accounts tests only
-python manage.py test accounts
-
-# Run detection API tests only
-python manage.py test detection
-```
+### 3. CMS & Public APIs
+- **`POST /api/v1/cms/enquiries/`**: Anonymous contact enquiry form submission.
+- **`GET /api/v1/cms/enquiries/`**: Admin enquiry management view.
+- **`POST /api/v1/auth/login/`**: Token-based administrator login.
+- **`GET /api/v1/auth/me/`**: Current authenticated user profile.
 
 ---
 

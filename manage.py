@@ -6,6 +6,16 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    # Auto-activate local .venv if run with system python
+    import pathlib
+    base_dir = pathlib.Path(__file__).resolve().parent
+    venv_python = base_dir / '.venv' / 'bin' / 'python'
+    if venv_python.exists() and sys.executable != str(venv_python):
+        try:
+            import django
+        except ImportError:
+            os.execv(str(venv_python), [str(venv_python)] + sys.argv)
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'FakeNewsDetect.settings')
     try:
         from django.core.management import execute_from_command_line

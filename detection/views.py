@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from detection.services.detector import FakeNewsDetector
 from detection.services.domain_analyzer import fetch_article_from_url, analyze_domain_credibility
-from detection.models import IndexedNews, DetectionLog
+from detection.models import IndexedNews, DetectionLog, Article
 from apps.cms.models import NewsAndUpdate
 
 logger = logging.getLogger(__name__)
@@ -356,3 +356,94 @@ def review_detection_api(request, detection_id):
     except Exception as e:
         logger.error(f"Error in review_detection_api: {e}", exc_info=True)
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def articles_api(request):
+    """
+    GET  /api/articles/  -> List articles
+    POST /api/articles/  -> Create new article
+    """
+    if request.method == 'GET':
+        articles = Article.objects.all()
+        data = []
+        for art in articles:
+            data.append({
+                'id': art.id,
+                'title': art.title,
+                'username': art.username,
+                'description': art.description,
+                'rate': float(art.rate) if art.rate is not None else 5.0,
+                'image': art.image.url if art.image else None,
+                'created_at': art.created_at.strftime('%Y-%m-%d %H:%M:%S') if art.created_at else ''
+            })
+        return JsonResponse(data, safe=False)
+
+    try:
+        if request.content_type == 'application/json':
+            body = json.loads(request.body)
+        else:
+            body = request.POST
+
+        art = Article.objects.create(
+            title=body.get('title', 'Untitled'),
+            username=body.get('username', 'Admin'),
+            description=body.get('description', ''),
+            rate=float(body.get('rate', 5.0) or 5.0),
+        )
+        return JsonResponse({
+            'success': True,
+            'id': art.id,
+            'title': art.title,
+            'message': 'Article created successfully.'
+        }, status=201)
+    except Exception as e:
+        logger.error(f"Error creating article: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE"])
+def article_detail_api(request, pk):
+    """
+    GET    /api/articles/<pk>/ -> Retrieve article
+    PUT    /api/articles/<pk>/ -> Update article
+    DELETE /api/articles/<pk>/ -> Delete article
+    """
+    try:
+        art = Article.objects.get(pk=pk)
+    except Article.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Article not found.'}, status=404)
+
+    if request.method == 'DELETE':
+        art.delete()
+        return JsonResponse({'success': True, 'message': 'Article deleted.'})
+
+    if request.method == 'PUT':
+        try:
+            if request.content_type == 'application/json':
+                body = json.loads(request.body)
+            else:
+                body = request.POST
+
+            art.title = body.get('title', art.title)
+            art.username = body.get('username', art.username)
+            art.description = body.get('description', art.description)
+            if 'rate' in body and body['rate'] is not None:
+                art.rate = float(body['rate'])
+            art.save()
+            return JsonResponse({'success': True, 'message': 'Article updated successfully.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    return JsonResponse({
+        'id': art.id,
+        'title': art.title,
+        'username': art.username,
+        'description': art.description,
+        'rate': float(art.rate) if art.rate is not None else 5.0,
+        'image': art.image.url if art.image else None,
+        'created_at': art.created_at.strftime('%Y-%m-%d %H:%M:%S') if art.created_at else ''
+    })
+

@@ -99,3 +99,25 @@ class DetectionLog(models.Model):
 
     def __str__(self):
         return f"{self.created_at.strftime('%Y-%m-%d %H:%M')} - {self.result} ({self.confidence:.1f}%)"
+
+
+class Article(models.Model):
+    """
+    User/Admin curated articles repository.
+    Mapped to existing accounts_article database table.
+    """
+    image = models.ImageField(upload_to='articles/', blank=True, null=True)
+    title = models.CharField(max_length=255)
+    username = models.CharField(max_length=100, default='Admin')
+    description = models.TextField(blank=True, default='')
+    rate = models.DecimalField(max_digits=5, decimal_places=2, default=5.0)
+    admin_id = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'accounts_article'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title
