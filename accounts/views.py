@@ -4,23 +4,23 @@ from django.shortcuts import render, get_object_or_404, redirect
 
 
 def home(request):
-    return render(request, "login.html")
+    return render(request, "index.html")
 
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import json
 from .models import Admin
+from .forms import AdminForm
 
 # Show register React form
 def register_template(request):
-    return render(request, 'register.html')
+    return render(request, 'index.html')
 
 # API to handle register POST
 @csrf_exempt
 def register_view(request):
     if request.method == 'GET':
-        return render(request, 'register.html')
+        return render(request, 'index.html')
     if request.method == 'POST':
         data = json.loads(request.body)
 
@@ -57,18 +57,28 @@ def login_view(request):
     if request.method == 'POST':
         import hmac
         from django.contrib.auth.hashers import check_password, make_password
+        from apps.authentication.models import User as AuthUser
         data = json.loads(request.body)
 
-        email = data.get('email')
+        email = (data.get('email') or '').strip()
         password = data.get('password')
 
         # Check required fields
         if not email or not password:
             return JsonResponse({'message': 'Email and password are required'}, status=400)
 
-        try:
-            user = Admin.objects.get(email=email)
-            is_valid = False
+        # Allow matching pashupati@python.com to pashupati@python.py or vice-versa if primary admin
+        search_emails = [email]
+        if email.lower() == 'pashupati@python.com':
+            search_emails.append('pashupati@python.py')
+        elif email.lower() == 'pashupati@python.py':
+            search_emails.append('pashupati@python.com')
+
+        # 1. First check accounts.models.Admin
+        user = Admin.objects.filter(email__in=search_emails).first()
+        is_valid = False
+
+        if user:
             # Check hashed password first
             if check_password(password, user.password):
                 is_valid = True
@@ -78,12 +88,31 @@ def login_view(request):
                 user.password = make_password(password)
                 user.save(update_fields=['password'])
 
-            if is_valid:
-                request.session['admin_id'] = user.id  # set session
-                return JsonResponse({'message': 'Login successful', 'name': user.name})
-            else:
-                return JsonResponse({'message': 'Invalid email or password'}, status=401)
-        except Admin.DoesNotExist:
+        # 2. If not verified via Admin, fallback to apps.authentication.models.User
+        if not is_valid:
+            auth_user = (
+                AuthUser.objects.filter(email__in=search_emails).first() or
+                AuthUser.objects.filter(username__iexact=email).first()
+            )
+            if auth_user and auth_user.check_password(password) and auth_user.is_active:
+                is_valid = True
+                # Ensure an Admin record exists for session
+                user, _ = Admin.objects.get_or_create(
+                    email=auth_user.email,
+                    defaults={
+                        'name': auth_user.full_name or auth_user.username,
+                        'phone': auth_user.phone or '',
+                        'address': auth_user.address or '',
+                    }
+                )
+                user.name = auth_user.full_name or auth_user.username
+                user.password = auth_user.password
+                user.save()
+
+        if is_valid and user:
+            request.session['admin_id'] = user.id  # set session
+            return JsonResponse({'message': 'Login successful', 'name': user.name})
+        else:
             return JsonResponse({'message': 'Invalid email or password'}, status=401)
 
     return JsonResponse({'message': 'Invalid request'}, status=400)
@@ -115,7 +144,7 @@ def dashboard_view(request):
     except Admin.DoesNotExist:
         return redirect('login')
 
-    return render(request, 'dashboard.html', {
+    return render(request, 'index.html', {
         'admin': admin,
         'csrf_token': request.COOKIES.get('csrftoken'),
     })
@@ -322,14 +351,14 @@ def admin_edit(request, admin_id):
             return redirect('dashboard')
     else:
         form = AdminForm(instance=admin)
-    return render(request, 'admin_edit.html', {'form': form, 'admin': admin})
+    return render(request, 'index.html', {'form': form, 'admin': admin})
 
 def admin_delete(request, admin_id):
     admin = get_object_or_404(Admin, id=admin_id)
     if request.method == 'POST':
         admin.delete()
         return redirect('dashboard')
-    return render(request, 'admin_delete_confirm.html', {'admin': admin})
+    return render(request, 'index.html', {'admin': admin})
 
 
 @csrf_exempt

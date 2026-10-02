@@ -1,0 +1,168 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   UNIVERSAL CSS DESIGN SYSTEM — TOKENS & VARIABLES
+   Supports: Dark (default), Light, Cyberpunk
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root, [data-theme="dark"] {
+    --bg-app: #080c14;
+    --bg-surface: rgba(15, 21, 38, 0.88);
+    --bg-surface-solid: #0d1322;
+    --bg-surface-hover: rgba(24, 34, 60, 0.7);
+    --bg-card: rgba(20, 28, 50, 0.72);
+    --bg-card-hover: rgba(28, 39, 70, 0.85);
+    --bg-sidebar: #090e1a;
+    --bg-header: rgba(9, 14, 26, 0.85);
+    
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-normal: rgba(255, 255, 255, 0.12);
+    --border-hover: rgba(255, 255, 255, 0.22);
+    --border-focus: rgba(99, 102, 241, 0.65);
+
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --primary-dim: rgba(99, 102, 241, 0.15);
+    --primary-glow: rgba(99, 102, 241, 0.35);
+
+    --secondary: #06b6d4;
+    --secondary-hover: #0891b2;
+    --secondary-dim: rgba(6, 182, 212, 0.15);
+
+    --success: #10b981;
+    --success-dim: rgba(16, 185, 129, 0.15);
+    --success-border: rgba(16, 185, 129, 0.3);
+
+    --danger: #f43f5e;
+    --danger-dim: rgba(244, 63, 94, 0.15);
+    --danger-border: rgba(244, 63, 94, 0.3);
+
+    --warning: #f59e0b;
+    --warning-dim: rgba(245, 158, 11, 0.15);
+    --warning-border: rgba(245, 158, 11, 0.3);
+
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --text-inverse: #0f172a;
+
+    --input-bg: rgba(8, 12, 20, 0.8);
+    --input-border: rgba(255, 255, 255, 0.12);
+    --input-color: #f8fafc;
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-pill: 9999px;
+
+    --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 72px;
+    --header-height: 64px;
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="light"] {
+    --bg-app: #f1f5f9;
+    --bg-surface: rgba(255, 255, 255, 0.95);
+    --bg-surface-solid: #ffffff;
+    --bg-surface-hover: rgba(241, 245, 249, 0.85);
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8fafc;
+    --bg-sidebar: #ffffff;
+    --bg-header: rgba(255, 255, 255, 0.9);
+
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --border-normal: rgba(15, 23, 42, 0.14);
+    --border-hover: rgba(15, 23, 42, 0.25);
+    --border-focus: rgba(79, 70, 229, 0.6);
+
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-dim: rgba(79, 70, 229, 0.1);
+    --primary-glow: rgba(79, 70, 229, 0.2);
+
+    --secondary: #0891b2;
+    --secondary-hover: #0e7490;
+    --secondary-dim: rgba(8, 145, 178, 0.1);
+
+    --success: #059669;
+    --success-dim: rgba(5, 150, 105, 0.1);
+    --success-border: rgba(5, 150, 105, 0.25);
+
+    --danger: #e11d48;
+    --danger-dim: rgba(225, 29, 72, 0.1);
+    --danger-border: rgba(225, 29, 72, 0.25);
+
+    --warning: #d97706;
+    --warning-dim: rgba(217, 119, 6, 0.1);
+    --warning-border: rgba(217, 119, 6, 0.25);
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --text-inverse: #ffffff;
+
+    --input-bg: #ffffff;
+    --input-border: rgba(15, 23, 42, 0.18);
+    --input-color: #0f172a;
+
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0 8px 20px -4px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 20px 40px -10px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="cyberpunk"] {
+    --bg-app: #070614;
+    --bg-surface: rgba(20, 14, 40, 0.9);
+    --bg-surface-solid: #120e28;
+    --bg-surface-hover: rgba(35, 22, 70, 0.7);
+    --bg-card: rgba(24, 16, 52, 0.78);
+    --bg-card-hover: rgba(36, 24, 76, 0.9);
+    --bg-sidebar: #0b081c;
+    --bg-header: rgba(11, 8, 28, 0.88);
+
+    --border-subtle: rgba(217, 70, 239, 0.18);
+    --border-normal: rgba(217, 70, 239, 0.3);
+    --border-hover: rgba(6, 182, 212, 0.6);
+    --border-focus: #06b6d4;
+
+    --primary: #d946ef;
+    --primary-hover: #c026d3;
+    --primary-dim: rgba(217, 70, 239, 0.18);
+    --primary-glow: rgba(217, 70, 239, 0.45);
+
+    --secondary: #06b6d4;
+    --secondary-hover: #0891b2;
+    --secondary-dim: rgba(6, 182, 212, 0.18);
+
+    --success: #10b981;
+    --success-dim: rgba(16, 185, 129, 0.18);
+    --success-border: rgba(16, 185, 129, 0.35);
+
+    --danger: #ff0055;
+    --danger-dim: rgba(255, 0, 85, 0.18);
+    --danger-border: rgba(255, 0, 85, 0.35);
+
+    --warning: #fbbf24;
+    --warning-dim: rgba(251, 191, 36, 0.18);
+    --warning-border: rgba(251, 191, 36, 0.35);
+
+    --text-primary: #fdf4ff;
+    --text-secondary: #d8b4fe;
+    --text-muted: #a855f7;
+    --text-inverse: #070614;
+
+    --input-bg: rgba(14, 9, 32, 0.88);
+    --input-border: rgba(217, 70, 239, 0.3);
+    --input-color: #fdf4ff;
+
+    --shadow-sm: 0 2px 10px rgba(217, 70, 239, 0.15);
+    --shadow-md: 0 10px 30px -5px rgba(217, 70, 239, 0.25);
+    --shadow-lg: 0 25px 60px -15px rgba(217, 70, 239, 0.35);
+}
