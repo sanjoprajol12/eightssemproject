@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-    Play, Square, RefreshCw, Terminal, CheckCircle2,
-    AlertCircle, Clock, Cpu, BarChart3, Copy, Check, X
+    Play, CheckCircle2,
+    AlertCircle, Clock, Cpu, BarChart3, Copy, Check
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
@@ -22,50 +22,7 @@ export const TrainingModal = ({ isOpen, onClose, onTrainingCompleted }) => {
     const timerIntervalRef = useRef(null);
     const startTimeRef = useRef(null);
 
-    // Auto-scroll logs
-    useEffect(() => {
-        if (logEndRef.current) {
-            logEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [logs]);
-
-    // Check status on modal open
-    useEffect(() => {
-        if (isOpen) {
-            fetchStatus();
-        } else {
-            clearInterval(pollIntervalRef.current);
-            clearInterval(timerIntervalRef.current);
-        }
-        return () => {
-            clearInterval(pollIntervalRef.current);
-            clearInterval(timerIntervalRef.current);
-        };
-    }, [isOpen]);
-
-    const fetchStatus = async () => {
-        try {
-            const res = await fetch('/api/models/train/status/?since=0');
-            if (res.ok) {
-                const data = await res.json();
-                setStatus(data.status);
-                setIsRunning(data.is_running);
-                setProgress(data.progress);
-                setCurrentStep(data.current_step);
-                setLogs(data.logs || []);
-                setMetrics(data.metrics);
-                setElapsedTime(data.elapsed_seconds || 0.0);
-
-                if (data.is_running) {
-                    startPolling();
-                }
-            }
-        } catch (err) {
-            console.error('Failed to fetch training status:', err);
-        }
-    };
-
-    const startPolling = () => {
+    const startPolling = useCallback(() => {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = setInterval(async () => {
             try {
@@ -91,7 +48,50 @@ export const TrainingModal = ({ isOpen, onClose, onTrainingCompleted }) => {
                 console.error('Polling error:', err);
             }
         }, 800);
-    };
+    }, [onTrainingCompleted]);
+
+    // Auto-scroll logs
+    useEffect(() => {
+        if (logEndRef.current) {
+            logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [logs]);
+
+    // Check status on modal open
+    useEffect(() => {
+        if (!isOpen) {
+            clearInterval(pollIntervalRef.current);
+            clearInterval(timerIntervalRef.current);
+            return;
+        }
+
+        let isMounted = true;
+        fetch('/api/models/train/status/?since=0')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (!isMounted || !data) return;
+                setStatus(data.status);
+                setIsRunning(data.is_running);
+                setProgress(data.progress);
+                setCurrentStep(data.current_step);
+                setLogs(data.logs || []);
+                setMetrics(data.metrics);
+                setElapsedTime(data.elapsed_seconds || 0.0);
+
+                if (data.is_running) {
+                    startPolling();
+                }
+            })
+            .catch(err => {
+                console.error('Failed to fetch training status:', err);
+            });
+
+        return () => {
+            isMounted = false;
+            clearInterval(pollIntervalRef.current);
+            clearInterval(timerIntervalRef.current);
+        };
+    }, [isOpen, startPolling]);
 
     const handleStartTraining = async () => {
         setIsRunning(true);

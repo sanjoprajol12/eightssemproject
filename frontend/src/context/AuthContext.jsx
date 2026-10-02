@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 
 const AuthContext = createContext();
@@ -15,6 +15,19 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(() => localStorage.getItem('truthlens_token') || null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const logout = useCallback(async () => {
+        try {
+            if (token) await api.logout();
+        } catch {
+            // Ignore failure on logout call
+        } finally {
+            localStorage.removeItem('truthlens_token');
+            localStorage.removeItem('truthlens_user');
+            setToken(null);
+            setUser(null);
+        }
+    }, [token]);
+
     useEffect(() => {
         const checkAuth = async () => {
             if (token) {
@@ -29,7 +42,7 @@ export const AuthProvider = ({ children }) => {
             setIsLoading(false);
         };
         checkAuth();
-    }, [token]);
+    }, [token, logout]);
 
     const login = async (credentials) => {
         const res = await api.login(credentials);
@@ -38,19 +51,6 @@ export const AuthProvider = ({ children }) => {
         setToken(res.token);
         setUser(res.user);
         return res;
-    };
-
-    const logout = async () => {
-        try {
-            if (token) await api.logout();
-        } catch {
-            // Ignore failure on logout call
-        } finally {
-            localStorage.removeItem('truthlens_token');
-            localStorage.removeItem('truthlens_user');
-            setToken(null);
-            setUser(null);
-        }
     };
 
     return (

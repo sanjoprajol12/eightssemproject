@@ -55,8 +55,32 @@ export const GenericCmsPage = ({ resourceKey }) => {
     }, [config.resource, config.title, showToast]);
 
     useEffect(() => {
-        fetchData(1, searchQuery);
-    }, [fetchData, searchQuery]);
+        let isMounted = true;
+        const queryParams = new URLSearchParams();
+        queryParams.set('page', '1');
+        if (searchQuery) queryParams.set('search', searchQuery);
+
+        api.list(config.resource, queryParams.toString())
+            .then(res => {
+                if (!isMounted) return;
+                setData(res.results || []);
+                setPagination({
+                    currentPage: res.current_page || 1,
+                    totalPages: res.total_pages || 1,
+                    totalCount: res.count || 0
+                });
+            })
+            .catch(err => {
+                if (isMounted) showToast(err.message || `Failed to fetch ${config.title}`, 'error');
+            })
+            .finally(() => {
+                if (isMounted) setIsLoading(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [config.resource, config.title, searchQuery, showToast]);
 
     const handleOpenCreate = () => {
         setEditingItem(null);

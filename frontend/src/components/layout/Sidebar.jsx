@@ -7,7 +7,7 @@ import {
     Settings, CreditCard, Send, ShieldCheck, Search, Activity, UserCog, Cpu
 } from 'lucide-react';
 
-export const navigationGroups = [
+const navigationGroups = [
     {
         title: 'Core Administration',
         items: [

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-    FileText, CheckCircle2, AlertTriangle, Activity, RefreshCw,
-    Search, Plus, Trash2, Edit2, ShieldAlert, Cpu, Eye, ExternalLink, Play
+    FileText, CheckCircle2, AlertTriangle, Activity,
+    Cpu, Play
 } from 'lucide-react';
 import { StatCard, Card } from '../components/common/Card';
 import { DataTable } from '../components/common/DataTable';
@@ -19,7 +19,7 @@ export const DetectorDashboardPage = () => {
     const [articles, setArticles] = useState([]);
     const [reviewQueue, setReviewQueue] = useState([]);
     const [logs, setLogs] = useState([]);
-    const [sysInfo, setSysInfo] = useState({});
+    const [_sysInfo, setSysInfo] = useState({});
     const [isLoading, setIsLoading] = useState(false);
 
     // Article Form modal
@@ -37,10 +37,6 @@ export const DetectorDashboardPage = () => {
     // Delete dialog
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [deletingArticle, setDeletingArticle] = useState(null);
-
-    // Logs filters
-    const [logSearch, setLogSearch] = useState('');
-    const [verdictFilter, setVerdictFilter] = useState('');
 
     // Training modal
     const [isTrainModalOpen, setIsTrainModalOpen] = useState(false);
@@ -83,7 +79,27 @@ export const DetectorDashboardPage = () => {
     };
 
     useEffect(() => {
-        fetchDashboardData();
+        let isMounted = true;
+        Promise.all([
+            fetch('/api/articles/').then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch('/api/review-queue/').then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch('/api/history/').then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch('/api/system/stats/').then(r => r.ok ? r.json() : {}).catch(() => ({}))
+        ]).then(([artData, revData, histData, sysData]) => {
+            if (!isMounted) return;
+            setArticles(Array.isArray(artData) ? artData : artData.results || []);
+            setReviewQueue(Array.isArray(revData) ? revData : revData.results || []);
+            setLogs(Array.isArray(histData) ? histData : histData.results || []);
+            setSysInfo(sysData || {});
+        }).catch(err => {
+            console.error('Error fetching dashboard data:', err);
+        }).finally(() => {
+            if (isMounted) setIsLoading(false);
+        });
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const handleOpenCreateArticle = () => {

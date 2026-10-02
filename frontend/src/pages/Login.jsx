@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, Mail, ArrowRight, AlertCircle, Sparkles, UserPlus, Eye, EyeOff, Search } from 'lucide-react';
+import { Shield, ArrowRight, AlertCircle, Sparkles, Eye, EyeOff, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
 import { Button } from '../components/common/Button';

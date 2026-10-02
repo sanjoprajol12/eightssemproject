@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    User, Mail, Phone, MapPin, Shield, Key, Save, ArrowLeft, 
-    CheckCircle2, AlertCircle, Smartphone, Lock, Eye, EyeOff 
+    Save, ArrowLeft, 
+    CheckCircle2, AlertCircle, Eye, EyeOff 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -54,7 +54,7 @@ export const AdminEditPage = ({ onBackToDashboard }) => {
                     is_email_authentication_enabled: Boolean(me.is_email_authentication_enabled),
                     password: ''
                 });
-            } catch (err) {
+            } catch {
                 if (user) {
                     setFormData(prev => ({
                         ...prev,

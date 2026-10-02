@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, User as UserIcon, Menu } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { Badge } from '../common/Badge';

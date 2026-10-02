@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, User, Mail, Lock, Phone, MapPin, FileText, ArrowRight, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, ArrowRight, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { api } from '../services/api';
 import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
 import { Button } from '../components/common/Button';
@@ -32,7 +32,7 @@ export const RegisterPage = ({ onNavigateToLogin, onNavigateToDetector }) => {
         setIsLoading(true);
 
         try {
-            const res = await api.register(formData);
+            await api.register(formData);
             setSuccess('Account created successfully! Redirecting to login...');
             addToast('Registration successful! You can now log in.', 'success');
             setTimeout(() => {

@@ -64,8 +64,32 @@ export const UsersPage = () => {
     }, [showToast]);
 
     useEffect(() => {
-        fetchUsers(1, searchQuery);
-    }, [fetchUsers, searchQuery]);
+        let isMounted = true;
+        const queryParams = new URLSearchParams();
+        queryParams.set('page', '1');
+        if (searchQuery) queryParams.set('search', searchQuery);
+
+        api.getUsers(queryParams.toString())
+            .then(res => {
+                if (!isMounted) return;
+                setUsers(res.results || []);
+                setPagination({
+                    currentPage: res.current_page || 1,
+                    totalPages: res.total_pages || 1,
+                    totalCount: res.count || 0
+                });
+            })
+            .catch(err => {
+                if (isMounted) showToast(err.message || 'Failed to fetch users', 'error');
+            })
+            .finally(() => {
+                if (isMounted) setIsLoading(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [searchQuery, showToast]);
 
     const handleOpenCreate = () => {
         setEditingUser(null);

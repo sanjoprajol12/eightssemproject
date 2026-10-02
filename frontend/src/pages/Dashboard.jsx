@@ -13,20 +13,21 @@ export const Dashboard = ({ onNavigate }) => {
     const [stats, setStats] = useState({});
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchStats = async () => {
-        setIsLoading(true);
-        try {
-            const data = await api.getCmsStats();
-            setStats(data || {});
-        } catch (err) {
-            console.error('Failed to load stats:', err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     useEffect(() => {
-        fetchStats();
+        let isMounted = true;
+        api.getCmsStats()
+            .then(data => {
+                if (isMounted) setStats(data || {});
+            })
+            .catch(err => {
+                console.error('Failed to load stats:', err);
+            })
+            .finally(() => {
+                if (isMounted) setIsLoading(false);
+            });
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const statItems = [

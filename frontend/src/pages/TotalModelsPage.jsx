@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Cpu, Database, Play, RefreshCw, CheckCircle2, AlertTriangle,
-    Layers, Search, Filter, ChevronLeft, ChevronRight, BarChart3,
-    ShieldCheck, Sparkles, Terminal, FileText, Hash
+    Search, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { Card, StatCard } from '../components/common/Card';
+import { StatCard } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { TrainingModal } from '../components/training/TrainingModal';
@@ -20,7 +19,7 @@ export const TotalModelsPage = () => {
 
     // Paginated Dataset table state
     const [datasetRows, setDatasetRows] = useState([]);
-    const [sourcesList, setSourcesList] = useState([]);
+    const [_sourcesList, setSourcesList] = useState([]);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [totalPages, setTotalPages] = useState(1);
@@ -28,8 +27,12 @@ export const TotalModelsPage = () => {
     const [counts, setCounts] = useState({ total: 0, real: 0, fake: 0 });
     const [isDataLoading, setIsDataLoading] = useState(false);
 
-    // Filters
     const [searchTerm, setSearchTerm] = useState('');
+    const searchTermRef = useRef(searchTerm);
+    useEffect(() => {
+        searchTermRef.current = searchTerm;
+    }, [searchTerm]);
+
     const [labelFilter, setLabelFilter] = useState('all'); // 'all' | 'real' | 'fake'
     const [sourceFilter, setSourceFilter] = useState('all');
 
@@ -37,7 +40,7 @@ export const TotalModelsPage = () => {
     const [isTrainModalOpen, setIsTrainModalOpen] = useState(false);
 
     // Fetch models summary from backend
-    const fetchSummary = async () => {
+    const fetchSummary = useCallback(async () => {
         setIsSummaryLoading(true);
         try {
             const res = await fetch('/api/models/summary/');
@@ -52,7 +55,7 @@ export const TotalModelsPage = () => {
         } finally {
             setIsSummaryLoading(false);
         }
-    };
+    }, [showToast]);
 
     // Fetch server-side paginated & filtered dataset
     const fetchDataset = useCallback(async (targetPage = page, search = searchTerm, label = labelFilter, source = sourceFilter, size = pageSize) => {
@@ -85,12 +88,60 @@ export const TotalModelsPage = () => {
     }, [page, searchTerm, labelFilter, sourceFilter, pageSize, showToast]);
 
     useEffect(() => {
-        fetchSummary();
-    }, []);
+        let isMounted = true;
+        fetch('/api/models/summary/')
+            .then(res => res.ok ? res.json() : Promise.reject(new Error('Failed')))
+            .then(data => {
+                if (!isMounted) return;
+                setSummary(data.summary);
+                setModels(data.models || []);
+            })
+            .catch(err => {
+                console.error('Failed to load models summary:', err);
+                if (isMounted) showToast('Unable to load models summary', 'error');
+            })
+            .finally(() => {
+                if (isMounted) setIsSummaryLoading(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [showToast]);
 
     useEffect(() => {
-        fetchDataset(page, searchTerm, labelFilter, sourceFilter, pageSize);
-    }, [page, labelFilter, sourceFilter, pageSize]);
+        let isMounted = true;
+        const params = new URLSearchParams({
+            page: page.toString(),
+            page_size: pageSize.toString(),
+            search: searchTermRef.current.trim(),
+            label: labelFilter,
+            source: sourceFilter
+        });
+
+        fetch(`/api/models/data/?${params.toString()}`)
+            .then(res => res.ok ? res.json() : Promise.reject(new Error('Failed')))
+            .then(data => {
+                if (!isMounted) return;
+                setDatasetRows(data.results || []);
+                setTotalCount(data.total || 0);
+                setTotalPages(data.total_pages || 1);
+                setPage(data.page || 1);
+                setCounts(data.counts || { total: 0, real: 0, fake: 0 });
+                if (data.sources) setSourcesList(data.sources);
+            })
+            .catch(err => {
+                console.error('Failed to load dataset:', err);
+                if (isMounted) showToast('Unable to load dataset records', 'error');
+            })
+            .finally(() => {
+                if (isMounted) setIsDataLoading(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [page, labelFilter, sourceFilter, pageSize, showToast]);
 
     // Handle search input with manual trigger or Enter
     const handleSearchSubmit = (e) => {

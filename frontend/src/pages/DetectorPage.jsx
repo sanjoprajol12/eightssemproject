@@ -1,21 +1,22 @@
 import React, { useState, useRef } from 'react';
 import {
     Sparkles, ShieldCheck, Zap, Trash2, Copy, Download,
-    Printer, Link2, ExternalLink, AlertTriangle, CheckCircle,
-    XCircle, HelpCircle, Layers, BookOpen, Home, Info, Mail,
-    Send, Phone, User, MessageSquare, Database, Cpu, CheckCircle2
+    Link2, AlertTriangle, CheckCircle,
+    XCircle, HelpCircle, BookOpen, Home, Info, Mail,
+    Send, Phone, Database, Cpu, CheckCircle2
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
-import { Card } from '../components/common/Card';
 import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
 import { useToast } from '../components/common/Toast';
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 const REAL_WORDS = new Set(['study','research','university','confirmed','official','report','according','spokesperson','announced','data','analysis','published','journal','committee','government','authority','minister','statement','survey','percent','figures','evidence','statistics']);
 const FAKE_WORDS = new Set(['shocking','exposed','bombshell','secret','banned','coverup','truth','mainstream','agenda','globalist','radical','hoax','fake','scam','plandemic','crisis','urgent','must','share','deleted','wake','puppets','corrupt','illegal','destroy']);
 const WARN_WORDS = new Set(['unbelievable','incredible','devastating','catastrophic','outrage','explosive','terrifying','breaking','exclusive','never','always','everyone','nobody','100%','guaranteed','immediate','final','warning','alert','danger']);
 
-export const DetectorPage = ({ onNavigate }) => {
+export const DetectorPage = ({ onNavigate: _onNavigate } = {}) => {
     const { showToast } = useToast();
     const [currentNav, setCurrentNav] = useState('home'); // 'home' | 'about'
     const [activeTab, setActiveTab] = useState('text');
@@ -41,11 +42,9 @@ export const DetectorPage = ({ onNavigate }) => {
     const detectorSectionRef = useRef(null);
 
     // SVG Gauge calculation
-    const gaugeTotal = 251.2;
     const confidenceScore = result ? (parseFloat(result.confidence) || 0) : 0;
     const isReal = result?.result === 'Real News';
     const isInconclusive = result?.result === 'Inconclusive';
-    const gaugeOffset = gaugeTotal - (confidenceScore / 100) * gaugeTotal;
     const gaugeColor = isReal ? 'var(--success)' : isInconclusive ? 'var(--warning)' : 'var(--danger)';
 
     // Word & Char counts
@@ -835,7 +834,7 @@ export const DetectorPage = ({ onNavigate }) => {
                         Contact Us
                     </button>
                 </div>
-                <div>&copy; {new Date().getFullYear()} TruthLens &bull; Automated Fake News Detection &amp; Editorial Intelligence Platform. All rights reserved.</div>
+                <div>&copy; {CURRENT_YEAR} TruthLens &bull; Automated Fake News Detection &amp; Editorial Intelligence Platform. All rights reserved.</div>
             </footer>
         </div>
     );
