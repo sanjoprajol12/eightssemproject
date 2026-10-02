@@ -2,7 +2,7 @@
  * Centralized API Service for Django REST Framework
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 async function request(endpoint, options = {}) {
     const token = localStorage.getItem('truthlens_token');

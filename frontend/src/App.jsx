@@ -15,7 +15,22 @@ import { cmsModules } from './config/cmsModules';
 
 const MainApp = () => {
     const { isAuthenticated, isLoading } = useAuth();
-    const [publicView, setPublicView] = useState('detector'); // 'detector' | 'login' | 'register'
+
+    // Host & Path domain detection:
+    // Main domain (APP_URL): 'facknews.local' -> Welcome / Detector & About
+    // Admin domain (PORTAL_URL): 'portal.appur' -> Login first, then Dashboard if already logged in
+    const hostname = window.location.hostname.toLowerCase();
+    const pathname = window.location.pathname.toLowerCase();
+    const isPortalDomain = (
+        hostname === 'portal.appur' ||
+        hostname.startsWith('portal.') ||
+        pathname === '/login' ||
+        pathname === '/login/' ||
+        pathname.startsWith('/portal') ||
+        pathname.startsWith('/dashboard')
+    );
+
+    const [publicView, setPublicView] = useState(isPortalDomain ? 'login' : 'detector');
     const [activeTab, setActiveTab] = useState('dashboard');
 
     if (isLoading) {
@@ -35,38 +50,48 @@ const MainApp = () => {
         );
     }
 
-    // Unauthenticated routes: Detector, Login, Register
-    if (!isAuthenticated) {
-        if (publicView === 'login') {
+    // Portal Domain Routing (portal.appur / /portal / /login):
+    // 1. If unauthenticated -> return Login page first
+    // 2. If authenticated -> return Dashboard
+    if (isPortalDomain) {
+        if (!isAuthenticated) {
+            if (publicView === 'register') {
+                return (
+                    <RegisterPage
+                        onNavigateToLogin={() => setPublicView('login')}
+                        onNavigateToDetector={() => {
+                            window.location.href = '/';
+                        }}
+                    />
+                );
+            }
             return (
                 <Login
                     onNavigateToRegister={() => setPublicView('register')}
-                    onNavigateToDetector={() => setPublicView('detector')}
+                    onNavigateToDetector={() => {
+                        window.location.href = '/';
+                    }}
                 />
             );
         }
-
-        if (publicView === 'register') {
+        // If authenticated on portal domain, proceed to AdminLayout / Dashboard
+    } else {
+        // Main domain (facknews.local / public visitor):
+        // Show public welcome DetectorPage with Home and About (Contact Us)
+        if (!isAuthenticated) {
             return (
-                <RegisterPage
-                    onNavigateToLogin={() => setPublicView('login')}
-                    onNavigateToDetector={() => setPublicView('detector')}
+                <DetectorPage
+                    onNavigate={(destination) => {
+                        if (destination === 'login' || destination === 'dashboard') {
+                            setPublicView('login');
+                        }
+                    }}
                 />
             );
         }
-
-        return (
-            <DetectorPage
-                onNavigate={(destination) => {
-                    if (destination === 'login' || destination === 'dashboard') {
-                        setPublicView('login');
-                    }
-                }}
-            />
-        );
     }
 
-    // Authenticated admin routing
+    // Authenticated admin layout routing
     const getTitle = () => {
         if (activeTab === 'dashboard') return 'Dashboard Overview';
         if (activeTab === 'detector-dashboard') return 'TruthLens Hub';

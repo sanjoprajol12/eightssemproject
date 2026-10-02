@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
 from apps.authentication.models import User
-from accounts.models import Admin
+from django.db import connection
 
 
 class Command(BaseCommand):
@@ -33,22 +33,28 @@ class Command(BaseCommand):
         user.is_active = True
         user.save()
 
-        # 2. Seed Legacy/Accounts Admin model for Django template login
-        admin, admin_created = Admin.objects.get_or_create(
-            email=email,
-            defaults={
-                'name': 'Pashupati Admin',
-                'phone': '+977-9800000000',
-                'address': 'Admin Headquarters',
-                'note': 'Super Administrator',
-            }
-        )
-        admin.name = 'Pashupati Admin'
-        admin.password = make_password(password)
-        admin.save()
+        # 2. Seed Legacy/Accounts Admin table if present in DB
+        admin_status = "Skipped"
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='accounts_admin';")
+                if cursor.fetchone():
+                    cursor.execute("SELECT id FROM accounts_admin WHERE email = %s;", [email])
+                    row = cursor.fetchone()
+                    hashed = make_password(password)
+                    if row:
+                        cursor.execute("UPDATE accounts_admin SET password = %s, name = %s WHERE id = %s;", [hashed, 'Pashupati Admin', row[0]])
+                        admin_status = "Updated"
+                    else:
+                        cursor.execute(
+                            "INSERT INTO accounts_admin (name, email, password, phone, address, note) VALUES (%s, %s, %s, %s, %s, %s);",
+                            ['Pashupati Admin', email, hashed, '+977-9800000000', 'Admin Headquarters', 'Super Administrator']
+                        )
+                        admin_status = "Created"
+        except Exception as e:
+            admin_status = f"Error: {e}"
 
         user_status = "Created" if user_created else "Updated"
-        admin_status = "Created" if admin_created else "Updated"
         self.stdout.write(
             self.style.SUCCESS(
                 f"Successfully seeded admin credentials:\n"

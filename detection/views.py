@@ -8,7 +8,7 @@ from django.views.decorators.http import require_http_methods
 from detection.services.detector import FakeNewsDetector
 from detection.services.domain_analyzer import fetch_article_from_url, analyze_domain_credibility
 from detection.models import IndexedNews, DetectionLog
-from accounts.models import Article
+from apps.cms.models import NewsAndUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +161,7 @@ def system_stats_api(request):
         verified_indexed = IndexedNews.objects.filter(is_verified=True).count()
         transient_indexed = total_indexed - verified_indexed
 
-        total_articles = Article.objects.count()
+        total_articles = NewsAndUpdate.objects.count()
         total_detections = DetectionLog.objects.count()
 
         latest_detection = DetectionLog.objects.first()

@@ -76,6 +76,11 @@ class EnquiryViewSet(BaseCmsViewSet):
     serializer_class = EnquirySerializer
     search_fields = ['name', 'email', 'subject', 'message', 'phone']
 
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return super().get_permissions()
+
 
 class FaqCategoryViewSet(BaseCmsViewSet):
     queryset = FaqCategory.objects.all()

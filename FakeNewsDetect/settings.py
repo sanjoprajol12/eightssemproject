@@ -32,7 +32,11 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost,*').split(',') if host.strip()]
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', 'facknews.local,portal.appur,portal.facknews.local,127.0.0.1,localhost,*').split(',') if host.strip()]
+
+# Domain and Portal Routing Configuration
+APP_URL = os.environ.get('APP_URL', 'facknews.local')
+PORTAL_URL = os.environ.get('PORTAL_URL', 'portal.appur')
 
 # Application definition
 INSTALLED_APPS = [
@@ -53,8 +57,7 @@ INSTALLED_APPS = [
     'apps.authentication',
     'apps.cms',
 
-    # Legacy / specific apps
-    'accounts',
+    # Detection app
     'detection',
 ]
 
@@ -147,8 +150,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'accounts', 'static'),
-]
+    os.path.join(BASE_DIR, 'frontend', 'dist'),
+] if os.path.exists(os.path.join(BASE_DIR, 'frontend', 'dist')) else []
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -165,7 +168,7 @@ ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
 
 # ML Models Directory
 ML_MODELS_DIR = os.path.join(BASE_DIR, 'ml_models', 'current')
-ML_MODELS_LEGACY_DIR = os.path.join(BASE_DIR, 'accounts', 'ml_models')
+ML_MODELS_LEGACY_DIR = os.path.join(BASE_DIR, 'ml_models')
 
 # External Fact Check API Configuration
 GOOGLE_FACT_CHECK_API_KEY = os.environ.get('GOOGLE_FACT_CHECK_API_KEY', '')
@@ -187,11 +190,6 @@ LOGGING = {
     },
     'loggers': {
         'detection': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'accounts': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,

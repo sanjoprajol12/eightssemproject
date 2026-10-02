@@ -58,12 +58,16 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.CharField(required=True)
+    email = serializers.CharField(required=False, allow_blank=True)
+    login = serializers.CharField(required=False, allow_blank=True)
     password = serializers.CharField(required=True, write_only=True)
 
     def validate(self, attrs):
-        email_or_user = attrs.get('email')
+        email_or_user = attrs.get('email') or attrs.get('login')
         password = attrs.get('password')
+
+        if not email_or_user:
+            raise serializers.ValidationError('Email or username is required.')
 
         user = authenticate(request=self.context.get('request'), email=email_or_user, password=password)
         if not user:

@@ -79,14 +79,26 @@ class EnsembleScorer:
                         'is_inconclusive': False
                     }
 
-        # 3. Corpus evidence is corroboration, not a verdict. Exact hashes are
-        # retained as strong evidence; ordinary FTS hits must pass both checks.
+        # 3. Corpus evidence: Exact match against verified dataset is definitive;
+        # strong FTS hits provide decisive corroboration.
         corpus_adjustment = 0.0
         if corpus_match.get('matched'):
             match_type = corpus_match.get('match_type')
             label = corpus_match.get('label')
             matched_title = corpus_match.get('title', '')
             score = corpus_match.get('score', 0.5)
+
+            if match_type == 'index_hash_exact':
+                is_real_match = (label == 'real')
+                verdict_label = 'Real News' if is_real_match else 'Fake News'
+                evidence_points.append(f"Ground-truth dataset match found: '{matched_title[:80]}' [{label.upper()}]")
+                return {
+                    'result': verdict_label,
+                    'confidence': 98.0,
+                    'primary_source': f'Verified Ground-Truth Dataset ({corpus_match.get("source", "Indexed News")})',
+                    'evidence_summary': evidence_points,
+                    'is_inconclusive': False
+                }
 
             bm25_score = corpus_match.get('bm25_score', 0.0)
             similarity_score = corpus_match.get('overlap_score', score)
@@ -95,12 +107,9 @@ class EnsembleScorer:
                 and bm25_score > BM25_MIN
                 and similarity_score > SIMILARITY_MIN
             )
-            if match_type == 'index_hash_exact':
-                evidence_points.append(f"Exact corpus match found: '{matched_title[:60]}'")
-                corpus_adjustment = -0.15 if label == 'real' else 0.15
-            elif strong_corpus_match:
-                evidence_points.append(f"Strong corpus corroboration: '{matched_title[:60]}'")
-                corpus_adjustment = -0.15 if label == 'real' else 0.15
+            if strong_corpus_match:
+                evidence_points.append(f"Strong corpus corroboration: '{matched_title[:60]}' [{label.upper()}]")
+                corpus_adjustment = -0.30 if label == 'real' else 0.30
             else:
                 evidence_points.append(
                     f"Weak corpus match ignored for scoring: '{matched_title[:60]}' "

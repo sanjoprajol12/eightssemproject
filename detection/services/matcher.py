@@ -2,7 +2,10 @@ import re
 import logging
 from django.db import connection
 from detection.models import IndexedNews
-from accounts.models import Article
+try:
+    from apps.cms.models import NewsAndUpdate
+except ImportError:
+    NewsAndUpdate = None
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +39,7 @@ class NewsMatcher:
     """
     High-speed evidence matcher that replaces full CSV scans.
     Performs:
-    1. Exact / Partial match against the Article database table.
+    1. Exact / Partial match against the Article / News database table.
     2. Instantaneous SHA-256 hash match against IndexedNews.
     3. FTS5 BM25 ranked search against indexed historical news corpus.
     """
@@ -44,49 +47,60 @@ class NewsMatcher:
     @staticmethod
     def match_article_table(text: str) -> dict:
         """
-        Check existing accounts.Article database table.
+        Check verified CMS NewsAndUpdate and historical article tables.
         """
         stripped = (text or "").strip()
         if not stripped:
             return {'matched': False}
 
-        # 1. Case-insensitive exact title match
-        try:
-            exact = Article.objects.filter(title__iexact=stripped).first()
-            if exact:
-                return {
-                    'matched': True,
-                    'match_type': 'article_table_exact',
-                    'title': exact.title,
-                    'label': 'real',
-                    'source': 'Admin Article Database (Exact)',
-                    'score': 1.0,
-                    'article_id': exact.id
-                }
-        except Exception as e:
-            logger.warning(f"Error querying Article table exact: {e}")
-
-        # 2. Case-insensitive contains match (for reasonably long queries)
-        if len(stripped) >= 15:
+        # 1. Match NewsAndUpdate in CMS
+        if NewsAndUpdate is not None:
             try:
-                partial = Article.objects.filter(title__icontains=stripped).first()
-                if not partial:
-                    # Also check if article title is inside stripped text
-                    # (e.g. user pasted full article text with title headline at start)
-                    partial = Article.objects.filter(description__icontains=stripped[:100]).first()
-
-                if partial:
+                exact = NewsAndUpdate.objects.filter(title__iexact=stripped, is_active=True).first()
+                if exact:
                     return {
                         'matched': True,
-                        'match_type': 'article_table_partial',
-                        'title': partial.title,
+                        'match_type': 'article_table_exact',
+                        'title': exact.title,
                         'label': 'real',
-                        'source': 'Admin Article Database (Partial)',
-                        'score': 0.85,
-                        'article_id': partial.id
+                        'source': 'Verified News & Updates (CMS)',
+                        'score': 1.0,
+                        'article_id': exact.id
                     }
+                if len(stripped) >= 15:
+                    partial = NewsAndUpdate.objects.filter(title__icontains=stripped[:60], is_active=True).first()
+                    if partial:
+                        return {
+                            'matched': True,
+                            'match_type': 'article_table_partial',
+                            'title': partial.title,
+                            'label': 'real',
+                            'source': 'Verified News & Updates (CMS Partial)',
+                            'score': 0.85,
+                            'article_id': partial.id
+                        }
             except Exception as e:
-                logger.warning(f"Error querying Article table partial: {e}")
+                logger.warning(f"Error querying NewsAndUpdate: {e}")
+
+        # 2. Check accounts_article table if present
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='accounts_article';")
+                if cursor.fetchone():
+                    cursor.execute("SELECT id, title FROM accounts_article WHERE LOWER(title) = LOWER(%s) LIMIT 1;", [stripped])
+                    row = cursor.fetchone()
+                    if row:
+                        return {
+                            'matched': True,
+                            'match_type': 'article_table_exact',
+                            'title': row[1],
+                            'label': 'real',
+                            'source': 'Verified Article Database (Exact)',
+                            'score': 1.0,
+                            'article_id': row[0]
+                        }
+        except Exception as e:
+            logger.warning(f"Error querying accounts_article table: {e}")
 
         return {'matched': False}
 
