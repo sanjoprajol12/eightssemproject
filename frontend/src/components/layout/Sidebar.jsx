@@ -73,7 +73,7 @@ export const Sidebar = ({ activeTab, onSelectTab, isOpen }) => {
                     <div className="brand-icon">
                         <ShieldCheck size={20} />
                     </div>
-                    <span>Lions Club CMS</span>
+                    <span>Fack News Detection</span>
                 </div>
             </div>
 

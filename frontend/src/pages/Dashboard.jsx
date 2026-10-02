@@ -60,7 +60,7 @@ export const Dashboard = ({ onNavigate }) => {
                             Welcome back, {user?.full_name || user?.username || 'Administrator'}!
                         </h1>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', maxWidth: '650px' }}>
-                            Lions Club CMS is active with full Python backend architecture, 25 modular CMS CRUD endpoints, and custom role permissions.
+                            Fack News Detection is active with full Python backend architecture, 25 modular CMS CRUD endpoints, and custom role permissions.
                         </p>
                     </div>
 

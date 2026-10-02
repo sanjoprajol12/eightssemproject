@@ -361,7 +361,7 @@ class Service(TimeStampedModel, SoftDeleteModel):
 # 19. SITE SETTING
 # ─────────────────────────────────────────────────────────────────────────────
 class SiteSetting(TimeStampedModel, SoftDeleteModel):
-    company_name = models.CharField(max_length=255, default='Fake News')
+    company_name = models.CharField(max_length=255, default='Fake News Detection')
     description = models.TextField(null=True, blank=True)
     slogan = models.CharField(max_length=255, null=True, blank=True)
     tagline = models.CharField(max_length=255, null=True, blank=True)

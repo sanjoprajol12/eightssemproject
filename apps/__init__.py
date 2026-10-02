@@ -1,3 +1,3 @@
 """
-Apps package for lions club CMS & enterprise platform.
+Apps package for Fack News Detection & enterprise platform.
 """

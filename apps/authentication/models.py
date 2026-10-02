@@ -6,7 +6,7 @@ from .managers import UserManager
 
 class User(AbstractBaseUser, PermissionsMixin):
     """
-    Enterprise Custom User Model matching Lions Club CMS specification.
+    Enterprise Custom User Model matching Fack News Detection specification.
     """
     first_name = models.CharField(max_length=150, blank=True, default='')
     middle_name = models.CharField(max_length=150, blank=True, default='')

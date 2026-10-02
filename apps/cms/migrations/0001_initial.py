@@ -299,7 +299,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True, null=True)),
                 ('updated_at', models.DateTimeField(auto_now=True, null=True)),
                 ('deleted_at', models.DateTimeField(blank=True, db_index=True, null=True)),
-                ('company_name', models.CharField(default='Lions Club', max_length=255)),
+                ('company_name', models.CharField(default='Fake News Detection', max_length=255)),
                 ('description', models.TextField(blank=True, null=True)),
                 ('slogan', models.CharField(blank=True, max_length=255, null=True)),
                 ('tagline', models.CharField(blank=True, max_length=255, null=True)),
