@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     FileText, CheckCircle2, AlertTriangle, Activity, RefreshCw,
-    Search, Plus, Trash2, Edit2, ShieldAlert, Cpu, Eye, ExternalLink
+    Search, Plus, Trash2, Edit2, ShieldAlert, Cpu, Eye, ExternalLink, Play
 } from 'lucide-react';
 import { StatCard, Card } from '../components/common/Card';
 import { DataTable } from '../components/common/DataTable';
@@ -11,6 +11,7 @@ import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { useToast } from '../components/common/Toast';
+import { TrainingModal } from '../components/training/TrainingModal';
 
 export const DetectorDashboardPage = () => {
     const { showToast } = useToast();
@@ -40,6 +41,9 @@ export const DetectorDashboardPage = () => {
     // Logs filters
     const [logSearch, setLogSearch] = useState('');
     const [verdictFilter, setVerdictFilter] = useState('');
+
+    // Training modal
+    const [isTrainModalOpen, setIsTrainModalOpen] = useState(false);
 
     const fetchDashboardData = async () => {
         setIsLoading(true);
@@ -200,10 +204,27 @@ export const DetectorDashboardPage = () => {
     return (
         <div>
             {/* Header info */}
-            <div className="page-header">
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div className="page-header-info">
                     <h1>Detection Analytics & Review Hub</h1>
                     <p>Manage fact-checking articles, verify borderline predictions, and review real-time audit trails</p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <Button
+                        variant="primary"
+                        onClick={() => setIsTrainModalOpen(true)}
+                        style={{
+                            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                            boxShadow: '0 4px 16px rgba(99,102,241,0.4)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontWeight: '600'
+                        }}
+                    >
+                        <Play size={16} fill="currentColor" />
+                        Train Model (Live Console)
+                    </Button>
                 </div>
             </div>
 
@@ -462,6 +483,13 @@ export const DetectorDashboardPage = () => {
                 title="Delete Article"
                 message={`Are you sure you want to remove article "${deletingArticle?.title}"?`}
                 isLoading={isSaving}
+            />
+
+            {/* Live Model Training Terminal Modal */}
+            <TrainingModal
+                isOpen={isTrainModalOpen}
+                onClose={() => setIsTrainModalOpen(false)}
+                onTrainingCompleted={fetchDashboardData}
             />
         </div>
     );

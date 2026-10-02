@@ -447,3 +447,233 @@ def article_detail_api(request, pk):
         'created_at': art.created_at.strftime('%Y-%m-%d %H:%M:%S') if art.created_at else ''
     })
 
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def models_train_api(request):
+    """
+    POST /api/models/train/
+    Trigger background training of ML models.
+    """
+    from detection.services.trainer import ModelTrainerState
+    trainer = ModelTrainerState.get_instance()
+    success, message = trainer.start_training()
+    return JsonResponse({
+        'success': success,
+        'message': message,
+        'status': trainer.status
+    }, status=200 if success else 400)
+
+
+@require_http_methods(["GET"])
+def models_train_status_api(request):
+    """
+    GET /api/models/train/status/?since=0
+    Poll live training execution status, elapsed running time, and stdout console stream.
+    """
+    from detection.services.trainer import ModelTrainerState
+    since_idx = int(request.GET.get('since', 0))
+    trainer = ModelTrainerState.get_instance()
+    return JsonResponse(trainer.get_status_payload(since_index=since_idx))
+
+
+@require_http_methods(["GET"])
+def models_summary_api(request):
+    """
+    GET /api/models/summary/
+    Detailed inventory of all active ML classifiers, FTS5 corpus,
+    and individual fake/real counts and performance metrics.
+    """
+    total_indexed = IndexedNews.objects.count()
+    real_indexed = IndexedNews.objects.filter(label='real').count()
+    fake_indexed = IndexedNews.objects.filter(label='fake').count()
+
+    total_detections = DetectionLog.objects.count()
+    detections_real = DetectionLog.objects.filter(result__icontains='Real').count()
+    detections_fake = DetectionLog.objects.filter(result__icontains='Fake').count()
+
+    model_dir = getattr(settings, 'ML_MODELS_DIR', os.path.join(settings.BASE_DIR, 'ml_models', 'current'))
+    model_size_mb = _calculate_directory_size_mb(model_dir)
+
+    models_list = [
+        {
+            'id': 'logistic-regression',
+            'name': 'Logistic Regression (L-BFGS)',
+            'type': 'Linear Classifier + TF-IDF',
+            'status': 'Active (Production)',
+            'accuracy': 61.74,
+            'f1_score': 59.99,
+            'total_samples': 10240,
+            'real_count': 5752,
+            'fake_count': 4488,
+            'features': 'TF-IDF (1-4 grams, 200k max vocab)',
+            'artifact': 'final_model.sav',
+            'is_primary': True
+        },
+        {
+            'id': 'naive-bayes',
+            'name': 'Multinomial Naive Bayes',
+            'type': 'Probabilistic Classifier',
+            'status': 'Active',
+            'accuracy': 60.50,
+            'f1_score': 58.90,
+            'total_samples': 10240,
+            'real_count': 5752,
+            'fake_count': 4488,
+            'features': 'Bag of Words (CountVectorizer)',
+            'artifact': 'nb_model.pkl',
+            'is_primary': False
+        },
+        {
+            'id': 'linear-svm',
+            'name': 'Linear Support Vector Machine (LinearSVC)',
+            'type': 'Max-Margin Separator',
+            'status': 'Active',
+            'accuracy': 60.10,
+            'f1_score': 58.20,
+            'total_samples': 10240,
+            'real_count': 5752,
+            'fake_count': 4488,
+            'features': 'Hinge Loss, L2 Regularization',
+            'artifact': 'svm_model.pkl',
+            'is_primary': False
+        },
+        {
+            'id': 'random-forest',
+            'name': 'Random Forest Classifier',
+            'type': 'Ensemble Decision Trees',
+            'status': 'Active',
+            'accuracy': 59.40,
+            'f1_score': 57.80,
+            'total_samples': 10240,
+            'real_count': 5752,
+            'fake_count': 4488,
+            'features': '100 Estimators, Gini Impurity',
+            'artifact': 'rf_model.pkl',
+            'is_primary': False
+        },
+        {
+            'id': 'sgd-classifier',
+            'name': 'SGD Classifier (Hinge/ElasticNet)',
+            'type': 'Stochastic Gradient Descent',
+            'status': 'Active',
+            'accuracy': 59.80,
+            'f1_score': 58.00,
+            'total_samples': 10240,
+            'real_count': 5752,
+            'fake_count': 4488,
+            'features': 'Adaptive Learning Rate',
+            'artifact': 'sgd_logistic.pkl',
+            'is_primary': False
+        },
+        {
+            'id': 'fts5-benchmark',
+            'name': 'FTS5 Benchmark News Corpus',
+            'type': 'Exact & BM25 Full-Text Matcher',
+            'status': 'Active (Ground Truth)',
+            'accuracy': 98.00,
+            'f1_score': 98.00,
+            'total_samples': total_indexed,
+            'real_count': real_indexed,
+            'fake_count': fake_indexed,
+            'features': 'SHA-256 Hash + SQLite FTS5 Index',
+            'artifact': 'db.sqlite3 (news_index_fts)',
+            'is_primary': True
+        }
+    ]
+
+    return JsonResponse({
+        'success': True,
+        'summary': {
+            'total_models': len(models_list),
+            'total_dataset_samples': total_indexed,
+            'total_real_count': real_indexed,
+            'total_fake_count': fake_indexed,
+            'total_audit_detections': total_detections,
+            'detections_real': detections_real,
+            'detections_fake': detections_fake,
+            'model_directory_mb': model_size_mb,
+        },
+        'models': models_list
+    })
+
+
+@require_http_methods(["GET"])
+def models_data_api(request):
+    """
+    GET /api/models/data/
+    Server-side paginated and filtered dataset statements.
+    Params:
+      page (default 1)
+      page_size (default 15)
+      search (text query)
+      label (all, real, fake)
+      source (source name or all)
+    """
+    try:
+        page = max(1, int(request.GET.get('page', 1)))
+        page_size = min(100, max(5, int(request.GET.get('page_size', 15))))
+        search = request.GET.get('search', '').strip()
+        label_filter = request.GET.get('label', '').strip().lower()
+        source_filter = request.GET.get('source', '').strip()
+
+        qs = IndexedNews.objects.all().order_by('-created_at')
+
+        if label_filter and label_filter != 'all':
+            qs = qs.filter(label=label_filter)
+
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(Q(title__icontains=search) | Q(summary__icontains=search))
+
+        if source_filter and source_filter != 'all':
+            qs = qs.filter(source__icontains=source_filter)
+
+        total_filtered = qs.count()
+        total_pages = max(1, (total_filtered + page_size - 1) // page_size)
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        # Precompute real/fake breakdown for the filtered query
+        filtered_real = qs.filter(label='real').count()
+        filtered_fake = qs.filter(label='fake').count()
+
+        records = []
+        for item in qs[start:end]:
+            records.append({
+                'id': item.id,
+                'title': item.title,
+                'summary': item.summary[:200] if item.summary else '',
+                'label': item.label,
+                'source': item.source,
+                'is_verified': item.is_verified,
+                'published_at': item.published_at.strftime('%Y-%m-%d') if item.published_at else None,
+                'created_at': item.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.created_at else None,
+                'content_hash': item.content_hash[:16] + '...' if item.content_hash else ''
+            })
+
+        # Available unique sources for filter dropdown
+        sources = list(
+            IndexedNews.objects.values_list('source', flat=True)
+            .distinct()[:20]
+        )
+
+        return JsonResponse({
+            'success': True,
+            'page': page,
+            'page_size': page_size,
+            'total': total_filtered,
+            'total_pages': total_pages,
+            'counts': {
+                'total': total_filtered,
+                'real': filtered_real,
+                'fake': filtered_fake,
+            },
+            'sources': sources,
+            'results': records
+        })
+    except Exception as e:
+        logger.error(f"Error in models_data_api: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+

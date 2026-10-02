@@ -8,6 +8,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { AdminEditPage } from './pages/AdminEditPage';
 import { DetectorPage } from './pages/DetectorPage';
 import { DetectorDashboardPage } from './pages/DetectorDashboardPage';
+import { TotalModelsPage } from './pages/TotalModelsPage';
 import { Dashboard } from './pages/Dashboard';
 import { UsersPage } from './pages/UsersPage';
 import { GenericCmsPage } from './pages/GenericCmsPage';
@@ -95,6 +96,7 @@ const MainApp = () => {
     const getTitle = () => {
         if (activeTab === 'dashboard') return 'Dashboard Overview';
         if (activeTab === 'detector-dashboard') return 'TruthLens Hub';
+        if (activeTab === 'total-model') return 'Total Models & Dataset Analytics';
         if (activeTab === 'detector') return 'Fake News Detector';
         if (activeTab === 'profile') return 'Admin Profile & Settings';
         if (activeTab === 'users') return 'User Accounts';
@@ -109,7 +111,8 @@ const MainApp = () => {
             currentTitle={getTitle()}
         >
             {activeTab === 'dashboard' && <Dashboard onNavigate={setActiveTab} />}
-            {activeTab === 'detector-dashboard' && <DetectorDashboardPage />}
+            {activeTab === 'detector-dashboard' && <DetectorDashboardPage onNavigate={setActiveTab} />}
+            {activeTab === 'total-model' && <TotalModelsPage onNavigate={setActiveTab} />}
             {activeTab === 'detector' && (
                 <DetectorPage onNavigate={(dest) => setActiveTab(dest === 'login' ? 'dashboard' : dest)} />
             )}
@@ -119,6 +122,7 @@ const MainApp = () => {
             {activeTab === 'users' && <UsersPage />}
             {activeTab !== 'dashboard' &&
              activeTab !== 'detector-dashboard' &&
+             activeTab !== 'total-model' &&
              activeTab !== 'detector' &&
              activeTab !== 'profile' &&
              activeTab !== 'users' && (

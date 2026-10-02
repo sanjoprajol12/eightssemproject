@@ -277,8 +277,12 @@ python manage.py test detection
 - **`POST /api/source/check/`**: Evaluate domain credibility & historical fake rate.
 - **`POST /detect/`**: Legacy backward-compatible detection endpoint.
 
-### 2. Monitoring & Dashboard APIs
+### 2. Monitoring, Models & Training APIs
 - **`GET /api/system/stats/`**: Database size, total detections, indexed news count, and retention policy.
+- **`GET /api/models/summary/`**: Full inventory of all 6 ML classifiers, individual sample counts, real/fake counts, and accuracy metrics.
+- **`GET /api/models/data/?page=1&page_size=15&search=...&label=...&source=...`**: Server-side paginated and filtered benchmark statements with dynamic real/fake totals.
+- **`POST /api/models/train/`**: Launches asynchronous model training pipeline (`train_model.py`) in background worker thread.
+- **`GET /api/models/train/status/?since=0`**: Polls live training status, elapsed running time stopwatch, and stdout console stream.
 - **`GET /api/history/`**: Paginated detection audit log.
 - **`GET /api/review-queue/`**: Borderline detections awaiting human review.
 - **`POST /api/detections/<id>/review/`**: Submit human reviewer override verdict.

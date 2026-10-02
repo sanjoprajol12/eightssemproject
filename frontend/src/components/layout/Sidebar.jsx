@@ -4,7 +4,7 @@ import {
     Newspaper, Image, Images, Film, Sliders, ListOrdered,
     Briefcase, UserCheck, HeartHandshake, Download, Mail,
     HelpCircle, MessageSquare, Menu as MenuIcon, ExternalLink,
-    Settings, CreditCard, Send, ShieldCheck, Search, Activity, UserCog
+    Settings, CreditCard, Send, ShieldCheck, Search, Activity, UserCog, Cpu
 } from 'lucide-react';
 
 export const navigationGroups = [
@@ -13,6 +13,7 @@ export const navigationGroups = [
         items: [
             { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard, path: '/dashboard' },
             { id: 'detector-dashboard', label: 'TruthLens Hub', icon: Activity, path: '/detector-dashboard' },
+            { id: 'total-model', label: 'Total Model', icon: Cpu, path: '/total-model' },
             { id: 'detector', label: 'Public Detector', icon: Search, path: '/detector' },
             { id: 'users', label: 'User Accounts', icon: Users, path: '/users' },
             { id: 'profile', label: 'Edit Admin Profile', icon: UserCog, path: '/profile' },

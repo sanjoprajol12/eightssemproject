@@ -23,6 +23,12 @@ urlpatterns = [
     # History endpoints
     path('api/history/', views.detection_history_api, name='api_history_alias'),
 
+    # ML Models Analytics & Training Endpoints
+    path('api/models/summary/', views.models_summary_api, name='api_models_summary'),
+    path('api/models/data/', views.models_data_api, name='api_models_data'),
+    path('api/models/train/', views.models_train_api, name='api_models_train'),
+    path('api/models/train/status/', views.models_train_status_api, name='api_models_train_status'),
+
     # Backward compatible detect endpoint
     path('detect/', views.legacy_detect_view, name='legacy_detect'),
 ]
